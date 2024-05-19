@@ -2,12 +2,13 @@ import pygame
 import spritesheet
 from pygame.locals import *
 
+#editado por csbassin
 pygame.init()
 run = True
 window_width = 800
 window_height = 448
 window = pygame.display.set_mode((window_width, window_height))
-pygame.display.set_caption('Prison Break - Escape Big Sister')
+pygame.display.set_caption('Prison Break - Escape Big Sister - Teste')
 clock = pygame.time.Clock()
 font = pygame.font.SysFont("Lucida Grande", 64)
 
