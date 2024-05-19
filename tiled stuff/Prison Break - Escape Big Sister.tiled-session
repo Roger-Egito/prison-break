@@ -1,0 +1,60 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "Screenshot_2.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "": {
+            "scaleInDock": 1
+        },
+        "Outside.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "Power Station.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "Screenshot_1.tmx": {
+            "scale": 1.36325,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 400.5134788189987,
+                "y": 224.46359801943882
+            }
+        },
+        "Screenshot_2.tmx": {
+            "scale": 1,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 371,
+                "y": 185
+            }
+        }
+    },
+    "last.externalTilesetPath": "D:/Drive/# Projetos Dev Jogos/Prison Break - Escape Big Sister/assets/Tiles/power-station",
+    "last.imagePath": "D:/Drive/# Projetos Dev Jogos/Prison Break - Escape Big Sister/assets/Tiles/power-station",
+    "map.height": 14,
+    "map.lastUsedFormat": "tmx",
+    "map.width": 25,
+    "openFiles": [
+        "Screenshot_2.tmx",
+        "Outside.tsx",
+        "Power Station.tsx",
+        "Screenshot_1.tmx"
+    ],
+    "project": "Prison Break - Escape Big Sister.tiled-project",
+    "recentFiles": [
+        "Screenshot_1.tmx",
+        "Power Station.tsx",
+        "Outside.tsx",
+        "Screenshot_2.tmx"
+    ],
+    "tileset.lastUsedFilter": "All Files (*)",
+    "tileset.lastUsedFormat": "tsx"
+}
