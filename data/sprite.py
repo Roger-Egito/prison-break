@@ -158,7 +158,7 @@ class Sprite:
         surface.set_colorkey((0, 0, 0), pygame.RLEACCEL)
         surface.blit(self.img_sheet, (0, 0), rectangle)
         if colorkey is not None:
-            if colorkey is -1:
+            if colorkey == -1:
                 colorkey = surface.get_at((0,0))
             surface.set_colorkey(colorkey, pygame.RLEACCEL)
         self.img = surface
