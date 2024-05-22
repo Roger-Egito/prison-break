@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random
+import math
 
 testing = True
 
@@ -36,11 +37,11 @@ class fps:
     tick_counter = 0
     loop_counter = 0
 
-    font = pygame.font.Font(None, 64)
+    font = pygame.font.Font(None, 32)
     color = 'lightsalmon' #(195, 100, 195)
 
     alignment = "topright"
-    coords = (window.width - 64, 32)
+    coords = (window.width - 16, 8)
 
 
 
@@ -69,7 +70,7 @@ class fps:
                    cls.last_values.clear()
                 cls.loop_counter = 0
 
-            text = cls.font.render(str(cls.avg), 1, pygame.Color(cls.color))
+            text = cls.font.render("FPS: " + str(cls.avg), 1, pygame.Color(cls.color))
             rect = text.get_rect()
             setattr(rect, cls.alignment, cls.coords)
             pygame.draw.rect(window.display, 'black', rect)
@@ -94,6 +95,11 @@ class delta:
 
 class gravity():
     fall_speed_ceil = 600
+
+class calc:
+    @classmethod
+    def hypotenuse(cls, a, b):
+        return math.sqrt(a ** 2 + b ** 2)
 
 
 def quit_game():

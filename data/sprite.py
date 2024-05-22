@@ -1,20 +1,39 @@
 import pygame
 from data.spritesheet___ignore___ import spritesheet
 from data.config import render, delta, window, gravity
+from data.anim import Anim
 
 
 class Sprite:
-    def __init__(self, img_sheet='', img='', has_alpha=True, x=0, y=0, size_mult=1, speed=200, flipped=False):
-        self.img_sheet = img_sheet
-        self.img = img
+    class States:
+        IDLE = 'IDLE'
+        WALKING = 'WALKING'
+        JUMPING = 'JUMPING'
+        FALLING = 'FALLING'
+        RUNNING = 'RUNNING'
+        CROUCHING = 'CROUCHING'
 
+    def __init__(
+            self,
+            img='',
+            sheet=True,
+            has_alpha=True,
+            x=0,
+            y=0,
+            size_mult=1.5,
+            speed=125,
+            flipped=False,
+            sheet_sprite_dimensions=(4, 14, 20, 34),
+            sheet_image_count=4,
+            sheet_step=1,
+            sheet_colorkey=None):
 
-        if (img_sheet != ''):
-            self.img_sheet = pygame.image.load(img_sheet).convert_alpha() if has_alpha else pygame.image.load(img_sheet).convert() #spritesheet('assets/Characters/2 Punk/Punk_idle.png').image_at((0, 0, 48, 48)) #pygame.image.load(img).convert_alpha() if has_alpha else pygame.image.load(img).convert()
-        if (img != ''):
-            self.img = pygame.image.load(img).convert_alpha() if has_alpha else pygame.image.load(img).convert()
-        elif (img_sheet != ''):
-            self.sheet_to_img()
+        self.img = pygame.image.load(img).convert_alpha() if has_alpha else pygame.image.load(img).convert()
+        self.anim = Anim()
+
+        if sheet:
+            self.anim.idle = self.anim.populate(img, sheet_sprite_dimensions, sheet_image_count, sheet_step, has_alpha, sheet_colorkey)
+            self.img = self.anim.idle[0]
 
         #self.img_sheet = pygame.image.load(img_sheet).convert_alpha() if has_alpha else pygame.image.load(img_sheet).convert() #spritesheet('assets/Characters/2 Punk/Punk_idle.png').image_at((0, 0, 48, 48)) #pygame.image.load(img).convert_alpha() if has_alpha else pygame.image.load(img).convert()
         self.has_alpha = has_alpha
@@ -25,13 +44,16 @@ class Sprite:
         self.size_mult = size_mult
         self.flipped = flipped
         self.rect = pygame.Rect(x, y, self.width, self.height)
+        self.change_size(size_mult)
 
         self.speed = speed
 
         self.jumping = False
-        self.jump_height = self.height * 3000
+        self.jump_height = 3000
 
         self.fall_speed = 0
+
+        self.state = self.States.IDLE
 
     @property
     def center(self):
@@ -49,6 +71,14 @@ class Sprite:
     @property
     def center_height(self):
         return round(self.height / 2)
+
+    @property
+    def center_x(self):
+        return round(self.x + self.width / 2)
+
+    @property
+    def center_y(self):
+        return round(self.y + self.height / 2)
 
     @property
     def width(self):
@@ -81,51 +111,63 @@ class Sprite:
     def horizontal_flip(self):
         self.img = pygame.transform.flip(self.img, 1, 0)
 
+    def change_size(self, size_mult):
+        self.img = pygame.transform.scale_by(self.img, size_mult)
+        self.size_mult = size_mult
+        self.update_rect_size()
 
-    def move(self, x=0, y=0, flippable=True):
+    def change_image(self, img):
+        self.img = pygame.transform.scale_by(img, self.size_mult)
+        if self.flipped:
+            self.horizontal_flip()
+        self.update_rect_size()
 
-        if flippable and x < 0 and self.flipped is False:
+    def move(self, vector_x=0, vector_y=0, flippable=True):
+
+        if flippable and vector_x < 0 and self.flipped is False:
             self.horizontal_flip()
             self.flipped = True
-        elif flippable and x > 0 and self.flipped:
+        elif flippable and vector_x > 0 and self.flipped:
             self.horizontal_flip()
             self.flipped = False
 
-        self.x += x * delta.time()
-        self.y += y * delta.time()
+        self.x += vector_x * delta.time()
+        self.y += vector_y * delta.time()
         self.update_rect_coords()
 
 
     def move_right(self, dist=0):
         if dist:
-            self.move(x=dist)
+            self.move(vector_x=dist)
         else:
-            self.move(x=self.speed)
+            self.move(vector_x=self.speed)
 
     def move_left(self, dist=0):
         if dist:
-            self.move(x=-dist)
+            self.move(vector_x=-dist)
         else:
-            self.move(x=-self.speed)
+            self.move(vector_x=-self.speed)
 
     def move_up(self, dist=0):
         if dist:
-            self.move(y=-dist)
+            self.move(vector_y=-dist)
         else:
-            self.move(y=-self.speed)
+            self.move(vector_y=-self.speed)
 
     def move_down(self, dist=0):
         if dist:
-            self.move(y=dist)
+            self.move(vector_y=dist)
         else:
-            self.move(y=self.speed)
+            self.move(vector_y=self.speed)
 
     def jump(self, dist=0):
         if dist:
             self.y -= dist * delta.time()
         else:
             self.y -= 1
-            self.fall_speed -= self.jump_height / 500 # * delta.time()
+            self.fall_speed -= (self.jump_height * self.height) / 500 # * delta.time()
+        if not self.flipped:
+            self.x -= 14
         self.rect.y = round(self.y)
 
 
@@ -139,8 +181,11 @@ class Sprite:
 
         # Pseudo-floor. Delete later
         elif self.bottom > window.height - 32:
+            self.jumping = False
             self.set_bottom(window.height - 32)
         elif self.bottom == window.height - 32:
+            if self.jumping and not self.flipped:
+                self.x += 14
             self.jumping = False
             self.fall_speed = 0
         self.rect.y = round(self.y)
@@ -150,18 +195,9 @@ class Sprite:
         self.rect.x = round(self.x)
         self.rect.y = round(self.y)
 
-
-    def sheet_to_img(self, dimensions=(0, 0, 48, 48), colorkey = None):
-        "Loads image from x,y,x+offset,y+offset"
-        rectangle = pygame.Rect(dimensions)
-        surface = pygame.Surface(rectangle.size)
-        surface.set_colorkey((0, 0, 0), pygame.RLEACCEL)
-        surface.blit(self.img_sheet, (0, 0), rectangle)
-        if colorkey is not None:
-            if colorkey == -1:
-                colorkey = surface.get_at((0,0))
-            surface.set_colorkey(colorkey, pygame.RLEACCEL)
-        self.img = surface
+    def update_rect_size(self):
+        self.rect.width = round(self.width)
+        self.rect.height = round(self.height)
 
     def render(self):
         render(self.img, self.rect)
