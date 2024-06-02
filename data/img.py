@@ -48,7 +48,7 @@ class img:
         render(self.img, self.coords)
 
 class Background(img):
-    def __init__(self, image, has_alpha=False, stretch=True, x=0, y=0):
+    def __init__(self, image, has_alpha=True, stretch=True, x=0, y=0):
         super().__init__(image, has_alpha, stretch, x, y)
 
     def render_horizontal_scrolling(self, speed=50, direction=-1, speed_mult=1):
@@ -57,6 +57,13 @@ class Background(img):
         self.x += speed * direction * speed_mult * delta.time()
         if (self.x * direction) >= self.width:
             self.x = self.default_x
+
+    def render_vertical_scrolling(self, speed=50, direction=1, speed_mult=1):
+        render(self.img, self.coords)
+        render(self.img, (self.x, self.y + (self.height * -direction)))
+        self.y += speed * direction * speed_mult * delta.time()
+        if (self.y * direction) >= self.height:
+            self.y = self.default_y
 
 class Foreground(img):
     def __init__(self, image, has_alpha=True, stretch=True, x=0, y=0):
