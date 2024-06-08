@@ -5,3 +5,6 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = image
         self.rect = self.image.get_rect(topleft=coords)
+
+    def update(self, step):
+        self.rect.x += step

@@ -1,5 +1,6 @@
 import pygame
-from data.config import render, delta, stage, terminal_velocity
+from data.config import render, delta
+from data.stage import *
 from data.anim import Anim
 from data.collision import Collision
 from data.audio import *
@@ -10,9 +11,18 @@ class Sprite:
         IDLE = 'IDLE'
         WALKING = 'WALKING'
         JUMPING = 'JUMPING'
+        S_JUMPING = 'S_JUMPING'
         FALLING = 'FALLING'
+        C_FALLING = 'C_FALLING'
         RUNNING = 'RUNNING'
         CROUCHING = 'CROUCHING'
+        HANGING = 'HANGING'
+        H_CROUCHING = 'H_CROUCHING'
+        H_WALKING = 'H_WALKING'
+        H_FALLING = 'H_FALLING'
+        H_JUMPING = 'H_JUMPING'
+        H_J_FALLING = 'H_J_FALLING'
+        H_C_WALKING = 'H_C_WALKING'
 
     def __init__(
             self,
@@ -31,8 +41,9 @@ class Sprite:
             collision_offset=(0,0),
             collision_dimensions=(0, 0),
             jump_mult=1,
-            jump_height=4.2,
-            affected_by_gravity=True):
+            jump_height=4.75,
+            affected_by_gravity=True,
+            has_collision=True):
 
         self.img = pygame.image.load(img).convert_alpha() if has_alpha else pygame.image.load(img).convert()
         self.anim = Anim()
@@ -55,6 +66,8 @@ class Sprite:
         self.speed = speed
         self.vector_x = 0
         self.vector_y = 0
+        self.x_speed_limit = 300
+        self.y_speed_limit = 600
 
         self.airborne = False
         self.crouching = False
@@ -62,11 +75,17 @@ class Sprite:
         self.climbing = False
         self.sliding = False
         self.swimming = False
+        self.flying = False
+        self.hanging = False
         self.jump_height = jump_height
         self.jump_mult = jump_mult
         self.affected_by_gravity = affected_by_gravity
+        self.has_collision = has_collision
 
         self.state = self.States.IDLE
+        self.last_state = self.States.IDLE
+        self.stored_state = self.States.IDLE
+        self.state_change_counter = 0
 
     # ---
 
@@ -79,6 +98,16 @@ class Sprite:
     def default_coords(self):
         coords = (self.default_x, self.default_y)
         return coords
+
+    # ---
+
+    @property
+    def vxdt(self):
+        return self.vector_x * delta.time()
+
+    @property
+    def vydt(self):
+        return self.vector_y * delta.time()
 
     # ---
 
@@ -138,18 +167,18 @@ class Sprite:
     def set_left(self, position):
         self.x = position - (self.collision.left - self.rect.left)
         self.update_rect_x()
-        self.update_collision_x()
 
     def set_top(self, position):
         self.y = position - (self.collision.top - self.rect.top)
+        self.update_rect_y()
 
     def set_right(self, position):
         self.x = (position - self.width) + (self.rect.right - self.collision.right)
         self.update_rect_x()
-        self.update_collision_x()
 
     def set_bottom(self, position):
         self.y = (position - self.height) + (self.rect.bottom - self.collision.bottom)
+        self.update_rect_y()
 
 # ---
 
@@ -169,112 +198,177 @@ class Sprite:
 
 # ---
 
-    def move(self, x=0, y=0, flippable=True):
+    def move(self, hor_speed=0, ver_speed=0, flippable=True):
 
-        if flippable and x < 0 and self.flipped is False:
+        if flippable and hor_speed < 0 and self.flipped is False:
             self.horizontal_flip()
             self.x -= self.width / 2
             self.flipped = True
-        elif flippable and x > 0 and self.flipped:
+            self.collision.flipped = True
+        elif flippable and hor_speed > 0 and self.flipped:
             self.horizontal_flip()
             self.x += self.width / 2
             self.flipped = False
+            self.collision.flipped = False
 
-        if x:
-            self.vector_x = x * delta.time()
-            self.x += self.vector_x
-        if y:
-            self.vector_y = y * delta.time()
-            self.y = self.vector_y
+        if hor_speed:
+            self.vector_x = hor_speed
+            self.x += self.vxdt
 
-        self.update_rect_position()
+            self.update_rect_position()
+
+            if hor_speed > 0:
+                self.check_collision_right(stage.tile_group)
+            else:
+                self.check_collision_left(stage.tile_group)
+
+        if ver_speed:
+            self.vector_y += ver_speed  # VECTORS SHOULD NOT HAVE DELTA.TIME! THEY PERSIST BETWEEN FRAMES
+
+            if abs(self.vector_y) > self.y_speed_limit:
+                self.vector_y = self.y_speed_limit if self.vydt > 0 else -self.y_speed_limit
+
+            self.y += self.vydt
+            self.update_rect_position()
+            if self.vector_y > 0:
+                self.check_collision_down(stage.tile_group)
+            else:
+                self.check_collision_up(stage.tile_group)
 
     def move_left(self, dist=0):
         if dist:
-            self.move(x=-dist)
+            self.move(hor_speed=-dist)
         else:
-            self.move(x=-self.speed)
+            self.move(hor_speed=-self.speed)
 
     def move_up(self, dist=0):
         if dist:
-            self.move(y=-dist)
+            self.move(ver_speed=-dist)
         else:
-            self.move(y=-self.speed)
+            self.move(ver_speed=-self.speed)
 
     def move_right(self, dist=0):
         if dist:
-            self.move(x=dist)
+            self.move(hor_speed=dist)
         else:
-            self.move(x=self.speed)
+            self.move(hor_speed=self.speed)
 
     def move_down(self, dist=0):
         if dist:
-            self.move(y=dist)
+            self.move(ver_speed=dist)
         else:
-            self.move(y=self.speed)
+            self.move(ver_speed=self.speed)
 
 # ---
 
     def jump(self, dist=0):
         if dist:
-            self.move(y=-dist)
+            pass
+            #self.move(y=-dist)
         else:
-            self.y -= 1
-            self.vector_y -= (self.jump_height * self.height * self.jump_mult) # * delta.time()
-        self.rect.y = round(self.y)
+            self.set_bottom(self.rect.bottom - 1)
+            self.vector_y -= (self.jump_height * self.height * self.jump_mult)# * delta.time()
+        self.update_rect_y()
+        hit = self.check_collision_up(stage.tile_group)
+        if hit:
+            return True
+        else:
+            return False
 
     def apply_gravity(self, strength=0):
-        oob_floor = 900  # out of bounds
+        if self.affected_by_gravity:
+            oob_floor = 900  # out of bounds
+            acceleration = strength if strength else 600 * delta.time()
 
-        self.vector_y += strength * delta.time() if strength else 600 * delta.time()
-        if self.vector_y > terminal_velocity:
-            self.vector_y = terminal_velocity
-        self.y += self.vector_y * delta.time()
+            self.move_down(acceleration)
 
-        if self.bottom > oob_floor:
-            self.airborne = False
-            self.vector_y = 0
-            self.set_bottom(96)
-
-        hit_list = self.collision.test(stage.tile_group)
-        if len(hit_list) > 0:
-            self.airborne = False
-            self.set_bottom(hit_list[0].top+1)
-            self.vector_y = 0
-
-        self.rect.y = round(self.y)
+            if self.bottom > oob_floor:
+                self.airborne = False
+                self.vector_y = 0
+                self.set_bottom(96)
 
 # ---
 
     def crouch(self):
-        offset = 10
+        offset = 20
         if not self.crouching:
             self.collision.height -= offset
             self.collision.rect.height -= offset
             self.collision.offset_top += offset
+            self.collision.update_position()
             self.crouching = True
 
     def stand(self):
-        offset = 10
+        offset = 20
         if self.crouching:
+            cramped = False
             self.collision.height += offset
             self.collision.rect.height += offset
             self.collision.offset_top -= offset
-            self.y += offset
-            self.rect.y += offset
-            self.crouching = False
+            self.collision.update_position()
+
+            hit_list = self.collision.get_hits(stage.tile_group)
+            for tile in hit_list:
+                if tile.y < self.collision.rect.y:
+                    self.collision.height -= offset
+                    self.collision.rect.height -= offset
+                    self.collision.offset_top += offset
+                    self.collision.update_position()
+                    cramped = True
+                    break
+
+            if not cramped:
+                #self.y -= offset
+                #self.rect.y -= offset
+                self.crouching = False
+
+    #def slide(self, direction):
+    #    offset = 10
+    #    if not self.sliding:
+    #        self.collision.height -= offset
+    #        self.collision.rect.height -= offset
+    #        self.collision.offset_top += offset
+    #        self.collision.update_position()
+    #        self.sliding = direction
+#
+    #def stop_slide(self):
+    #    offset = 10
+    #    if self.sliding:
+    #        cramped = False
+    #        self.collision.height += offset
+    #        self.collision.rect.height += offset
+    #        self.collision.offset_top -= offset
+    #        self.collision.update_position()
+#
+    #        hit_list = self.collision.get_hits(stage.tile_group)
+    #        for tile in hit_list:
+    #            if tile.y < self.collision.rect.y:
+    #                self.collision.height -= offset
+    #                self.collision.rect.height -= offset
+    #                self.collision.offset_top += offset
+    #                self.collision.update_position()
+    #                cramped = True
+    #                break
+#
+    #        if not cramped:
+    #            self.y += offset
+    #            self.rect.y += offset
+    #            self.sliding = False
 
 # ---
 
     def update_rect_position(self):
         self.rect.x = round(self.x)
         self.rect.y = round(self.y)
+        self.collision.update_position()
 
     def update_rect_x(self):
         self.rect.x = round(self.x)
+        self.collision.update_x()
 
     def update_rect_y(self):
         self.rect.y = round(self.y)
+        self.collision.update_y()
 
     def update_rect_size(self):
         self.rect.width = round(self.width)
@@ -301,6 +395,87 @@ class Sprite:
     def update_collision_y(self):
         self.collision.update_y()
 
+#    def check_collision_x(self, tiles):
+#        if self.has_collision:
+#            self.collision.rect.x += 1
+#            collisions = self.collision.get_hits(tiles)
+#            self.collision.rect.x -= 1
+#            for tile in collisions:
+#                #if
+#                if self.vector_x > 0:
+#                    self.set_right(tile.left)
+#                    self.vector_x = 0
+#                elif self.vector_x < 0:
+#                    self.set_left(tile.right)
+#                    self.vector_x = 0
+
+    def check_collision_right(self, tiles):
+        if self.has_collision:
+            self.collision.rect.x += 1
+            collisions = self.collision.get_hits(tiles)
+            self.collision.rect.x -= 1
+            for tile in collisions:
+                self.set_right(tile.left)
+                self.vector_x = 0
+
+    def check_collision_left(self, tiles):
+        if self.has_collision:
+            self.collision.rect.x -= 1
+            collisions = self.collision.get_hits(tiles)
+            self.collision.rect.x += 1
+            for tile in collisions:
+                self.set_left(tile.right)
+                self.vector_x = 0
+
+    def check_collision_down(self, tiles):
+        if self.has_collision:
+            #self.set_bottom(self.rect.bottom + 1) # DOES NOT WORK. MAKES JUMPING WEIRD. ALWAYS ROUNDS Y
+            self.collision.rect.y += 1
+            collisions = self.collision.get_hits(tiles)
+            self.collision.rect.y -= 1
+            for tile in collisions:
+                    self.airborne = False
+                    self.set_bottom(tile.top)
+                    self.vector_y = 0
+
+    def check_collision_up(self, tiles):
+        if self.has_collision:
+            #self.set_bottom(self.rect.bottom + 1) # DOES NOT WORK. MAKES JUMPING WEIRD. ALWAYS ROUNDS Y
+            self.collision.rect.y -= 1
+            collisions = self.collision.get_hits(tiles)
+            self.collision.rect.y += 1
+            for tile in collisions:
+                self.set_top(tile.bottom)
+                self.vector_y = 0
+            if len(collisions):
+                return True
+
+#    def check_collision(self, tiles):
+#        sprite = self.collision.rect
+#        if self.has_collision:
+#            collisions = self.collision.get_hits(tiles)
+#            for tile in collisions:
+#                dist_up = abs(sprite.bottom - tile.top)
+#                dist_down = abs(tile.bottom - sprite.top)
+#                dist_right = abs(tile.right - sprite.left)
+#                dist_left = abs(sprite.right - tile.left)
+#                closest_direction = min(dist_up, dist_down, dist_right, dist_left)
+#
+#                if closest_direction == dist_up:
+#                    self.vector_y = 0
+#                    self.set_bottom(tile.top+1)
+#                elif closest_direction == dist_down:
+#                    self.vector_y = 0
+#                    self.set_top(tile.bottom)
+#                elif closest_direction == dist_right:
+#                    self.vector_x = 0
+#                    self.set_left(tile.right)
+#                else:
+#                    self.vector_x = 0
+#                    self.set_right(tile.left)
+
+
+
     #def update_collision_size(self):
     #    self.collision.width *= self.size_mult
     #    self.collision.height *= self.size_mult
@@ -317,10 +492,36 @@ class Sprite:
                     self.change_image(self.anim.next(self.anim.walk))
                 case 'JUMPING' | 'FALLING':
                     self.change_image(self.anim.next(self.anim.jump))
+                case 'C_FALLING':
+                    self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1, speed_mult=3))
+                case 'S_JUMPING':
+                    self.change_image(self.anim.next(self.anim.s_jump, first_frame=1, last_frame=2, loop=False, step=-1))
                 case 'RUNNING':
                     self.change_image(self.anim.next(self.anim.run, speed_mult=2))
                 case 'CROUCHING':
-                    self.change_image(self.anim.next(self.anim.crouch, first_frame=2, loop=False))
+                    if self.sliding:
+                        self.change_image(self.anim.slide)
+                    else:
+                        self.change_image(self.anim.next(self.anim.crouch, first_frame=2, loop=False))
+                case 'HANGING':
+                    self.change_image(self.anim.next(self.anim.hang, first_frame=1, last_frame=1, loop=False))
+                case 'H_CROUCHING':
+                    if self.last_state == 'H_JUMPING' or self.last_state == 'H_J_FALLING':
+                        self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1))
+                    else:
+                        self.change_image(self.anim.next(self.anim.h_c_walk, first_frame=1, step=0))
+                case 'H_WALKING':
+                    self.change_image(self.anim.next(self.anim.h_walk, last_frame=1))
+                case 'H_C_WALKING':
+                    self.change_image(self.anim.next(self.anim.h_c_walk))
+                case 'H_FALLING':
+                    self.change_image(self.anim.next(self.anim.h_fall, first_frame=4, loop=False))
+                case 'H_JUMPING':
+                    #self.change_image(self.anim.next(self.anim.h_jump, first_frame=1, last_frame=1, loop=False))
+                    self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1))
+                case 'H_J_FALLING':
+                    self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1))
+
             #self.anim_tick_counter = 0
 
     def slide_fx(self):
