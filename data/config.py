@@ -30,28 +30,6 @@ class window:
     def draw(cls):
         cls.screen.blit(pygame.transform.scale(window.display, window.screen_size), (0, 0))
 
-class stage:
-    file = load_pygame('assets/maps/tmx/Testing3.tmx')
-    tile_group = pygame.sprite.Group()
-    decor_group = pygame.sprite.Group()
-
-
-    # This version will make EVERY tile have collision. You can uncomment the code below to put the layers you want to
-    # not have collision inside decor_group
-    for layer in file.layers:
-        if isinstance(layer, pytmx.TiledTileLayer):                 # Alternative: if hasattr(layer, 'data'):
-           for x, y, image in layer.tiles():
-               coords = (x * 32, y * 32)
-               Tile(coords=coords, image=image, groups=tile_group)
-
-    #for x, y, image in file.layers[1].tiles():
-    #    coords = (x * 32, y * 32)
-    #    Tile(coords=coords, image=image, groups=tile_group)
-#
-    #for x, y, image in file.layers[0].tiles():
-    #    coords = (x * 32, y * 32)
-    #    Tile(coords=coords, image=image, groups=decor_group)
-
 class fps:
 
     global clock
@@ -167,4 +145,3 @@ def render(img, coords=(0, 0)):
 
 
 clock = pygame.time.Clock()
-terminal_velocity = 600

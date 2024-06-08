@@ -36,7 +36,7 @@ class fps:
     def get(cls):
         return int(clock.get_fps())
 
-    max = 1           #random.randint(1, 10) * 100
+    max = 240           #random.randint(1, 10) * 100
     last_values = []
     max_samples = 5
     avg = 0

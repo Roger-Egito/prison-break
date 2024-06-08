@@ -114,7 +114,7 @@ class Collision:
         self.rect.width = round(self.width)
         self.rect.height = round(self.height)
 
-    def test(self, tiles):
+    def get_hits(self, tiles):
         hit_list = []
         for tile in tiles:
             rect = tile.rect

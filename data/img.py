@@ -1,7 +1,7 @@
 import pygame
 from data.config import window, render, delta
 
-class img:
+class Img:
     def __init__(self, image, has_alpha=True, stretch=False, x=0, y=0):
         self.load = pygame.image.load
         self.transform = pygame.transform
@@ -47,7 +47,7 @@ class img:
     def render(self):
         render(self.img, self.coords)
 
-class Background(img):
+class Background(Img):
     def __init__(self, image, has_alpha=True, stretch=True, x=0, y=0):
         super().__init__(image, has_alpha, stretch, x, y)
 
@@ -65,6 +65,6 @@ class Background(img):
         if (self.y * direction) >= self.height:
             self.y = self.default_y
 
-class Foreground(img):
+class Foreground(Img):
     def __init__(self, image, has_alpha=True, stretch=True, x=0, y=0):
         super().__init__(image, has_alpha, stretch, x, y)
