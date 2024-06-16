@@ -41,8 +41,8 @@ def testing():
     # ------------------------------------------------------------------------------------------------------------------
     # BACKGROUND
 
-    stage.load('assets/maps/tmx/Screenshot1.tmx')
-    stage.set_name('assets/maps/tmx/Screenshot1.tmx')
+    stage.load('assets/maps/tmx/map02.tmx')
+    stage.set_name('assets/maps/tmx/map02.tmx')
 
     # ------------------------------------------------------------------------------------------------------------------
     # SPRITES
@@ -50,7 +50,7 @@ def testing():
     # X and Y is the spawn point, you may want to change that to test maps
     # Bottom = x=254, y=344 <- Ignore this
     # Top = x=32, y=-50 <- Ignore this
-    player = Player('assets/Characters/2 Punk/Punk_idle.png', x=32, y=-50, collision_offset=[7, 14], collision_dimensions=(15, 34))  #collision_offset=[2.5, 14], collision_dimensions=(20, 34))
+    player = Player('assets/Characters/2 Punk/Punk_idle.png', x=10, y=160, collision_offset=[7, 14], collision_dimensions=(15, 34))  #collision_offset=[2.5, 14], collision_dimensions=(20, 34))
     player.anim.walk = player.anim.populate('assets/Characters/2 Punk/Walk.png', image_count=6)
     player.anim.jump = player.anim.populate('assets/Characters/2 Punk/Punk_jump.png', image_count=4)
     player.anim.run = player.anim.populate('assets/Characters/2 Punk/Punk_run.png', image_count=6)
