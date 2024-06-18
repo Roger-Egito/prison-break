@@ -41,8 +41,8 @@ def testing():
     # ------------------------------------------------------------------------------------------------------------------
     # BACKGROUND
 
-    stage.load('assets/maps/tmx/map02.tmx')
-    stage.set_name('assets/maps/tmx/map02.tmx')
+    stage.load('assets/maps/tmx/0-0.tmx')
+    stage.set_name('assets/maps/tmx/0-0.tmx')
 
     # ------------------------------------------------------------------------------------------------------------------
     # SPRITES

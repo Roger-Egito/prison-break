@@ -18,6 +18,7 @@ class Player(Sprite):
     def block_right_border(self):
         beyond_border = self.collision.right >= window.width
         if beyond_border or self.can_move is False:
+            '''
             if stage.name == 'Screenshot1':
                 if self.can_move is True:
                     stage.transition('assets/maps/tmx/Screenshot2.tmx')
@@ -33,13 +34,18 @@ class Player(Sprite):
                     self.t_right = False
                     stage.x = 0
                 #self.set_left(0)
-            else:
-                self.set_right(window.width)
+            elif stage.name == '0-0':
+                from data.stageLoader import loadFrontMap
+                loadFrontMap()
+            '''
+            from data.stageLoader import loadFrontMap
+            loadFrontMap()
         return beyond_border
 
     def block_left_border(self):
         beyond_border = self.collision.left <= 0
         if beyond_border or self.can_move is False:
+            '''
             #if stage.name == 'Screenshot2':
             #    stage.load('assets/maps/tmx/Screenshot1.tmx')
             #    stage.set_name('assets/maps/tmx/Screenshot1.tmx')
@@ -62,6 +68,9 @@ class Player(Sprite):
                 #self.set_left(0)
             else:
                 self.set_left(0)
+            '''
+            from data.stageLoader import loadBackMap
+            loadBackMap()
 
         return beyond_border
 
