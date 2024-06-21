@@ -10,6 +10,7 @@ class stage:
     name = ''
     last = ''
     tile_group = pygame.sprite.Group()
+    tile_group_lighted = pygame.sprite.Group()
     decor_group = pygame.sprite.Group()
     foreground_group = pygame.sprite.Group()
     background_group = pygame.sprite.Group()
@@ -33,6 +34,8 @@ class stage:
     #background_5 = Background(snowy_folder+'Ground_02.png')
     #background_6 = Background(snowy_folder+'Snow.png')
     #background_7 = Background('tiled_exports/caua.png')
+
+    foreground = Background('assets/Background/overlays/11.png')
 
     @classmethod
     def clear(cls):
@@ -105,22 +108,22 @@ class stage:
 
     @classmethod
     def move(cls):
-        step = 2
+        step = 4
         if stage.name == 'Screenshot1':
-            cls.tile_group.update(-step)
-            cls.decor_group.update(-step)
-            cls.foreground_group.update(-step)
-            cls.background_group.update(-step)
+            cls.tile_group.update(method=1, step=-step)
+            cls.decor_group.update(method=1, step=-step)
+            cls.foreground_group.update(method=1, step=-step)
+            cls.background_group.update(method=1, step=-step)
             cls.x -= step
         elif stage.name == 'Screenshot2':
-            cls.tile_group.update(step)
-            cls.decor_group.update(step)
-            cls.foreground_group.update(step)
-            cls.background_group.update(step)
+            cls.tile_group.update(method=1, step=step)
+            cls.decor_group.update(method=1, step=step)
+            cls.foreground_group.update(method=1, step=step)
+            cls.background_group.update(method=1, step=step)
             cls.x += step
 
     @classmethod
-    def render(cls, player):
+    def background_render(cls):
         # CLOUDS
         cls.background_1.render()
         cls.background_2.render()
@@ -141,7 +144,10 @@ class stage:
 
         cls.decor_group.draw(window.display)
         cls.background_group.draw(window.display)
-        player.render()
+
+
+    @classmethod
+    def foreground_render(cls):
         cls.tile_group.draw(window.display)
         cls.foreground_group.draw(window.display)
 

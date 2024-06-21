@@ -4,7 +4,6 @@ import random
 import math
 import os
 from data.audio import *
-from data.tile import *
 import pytmx
 from pytmx.util_pygame import *
 
@@ -23,7 +22,7 @@ class window:
     center = (center_width, center_height)
     #os.environ['SDL_VIDEO_CENTERED'] = '1'
     screen = pygame.display.set_mode((screen_size))#, pygame.NOFRAME)
-    display = pygame.Surface((width, height))
+    display = pygame.Surface((width, height), pygame.SRCALPHA)
     background_color = (10, 10, 10)
 
     @classmethod
