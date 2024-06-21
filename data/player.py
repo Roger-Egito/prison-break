@@ -1,14 +1,17 @@
 from data.sprite import Sprite
 from data.config import window, delta
 from data.stage import *
+from data.hearing import *
 import pygame
 
 
 class Player(Sprite):
     slide_tick_counter = 0
     slide_delay = 0.5
-    can_slide = True
     can_move = True
+    can_crouch = True
+    can_jump = True
+    cramped = False
     t_right = False  # Transition Right. Temp
     t_left = False   # Transition Left.  Temp
 
@@ -24,13 +27,15 @@ class Player(Sprite):
                     stage.transition('assets/maps/tmx/Screenshot2.tmx')
                 if stage.x > -window.width:
                     stage.move()
-                    self.x -= 1.92
+                    #self.x -= 3.84
                     self.update_rect_x()
                     self.can_move = False
+                    self.affected_by_gravity = False
                     self.t_right = True
                 else:
                     stage.set_name('assets/maps/tmx/Screenshot2.tmx')
                     self.can_move = True
+                    self.affected_by_gravity = True
                     self.t_right = False
                     stage.x = 0
                 #self.set_left(0)
@@ -56,13 +61,15 @@ class Player(Sprite):
                     stage.transition('assets/maps/tmx/Screenshot1.tmx')
                 if stage.x < window.width:
                     stage.move()
-                    self.x += 1.92
+                    self.x += 3.84
                     self.update_rect_x()
                     self.can_move = False
+                    self.affected_by_gravity = False
                     self.t_left = True
                 else:
                     stage.set_name('assets/maps/tmx/Screenshot1.tmx')
                     self.can_move = True
+                    self.affected_by_gravity = True
                     self.t_left = False
                     stage.x = 0
                 #self.set_left(0)
@@ -74,46 +81,63 @@ class Player(Sprite):
 
         return beyond_border
 
-    #TODO: Clean this mess
     def state_control(self):
-        if self.crouching:
-            if self.airborne:
-                if (self.sprinting or self.state == 'JUMPING' or self.state == 'S_JUMPING' or self.state == 'C_FALLING') and not self.hanging:
-                    self.state = self.States.C_FALLING
+        s = self.States
+        st = self.state
+        crouching = self.crouching
+        sprinting = self.sprinting
+        hanging = self.hanging
+        airborne = self.airborne
+        #flying = self.flying
+        walking = self.vector_x != 0
+        jumping = self.vector_y < 0  # and airborne and not flying
+        falling = self.vector_y > 0
+
+        if crouching and (self.last_state != 'HC_WALKING' or hanging):
+            if hanging:
+                self.state = s.H_CROUCHING
+                if walking:
+                    self.state = s.HC_WALKING
+            elif airborne:
+                if sprinting:
+                    self.state = s.F_BACKFLIP
                 else:
-                    self.state = self.States.H_CROUCHING
-                    if self.vector_x != 0:
-                        self.state = self.States.H_C_WALKING
+                    self.state = s.C_FALLING
             else:
-                self.state = self.States.CROUCHING
-        elif self.vector_y < 0:
-            if self.state == 'H_JUMPING':
-                self.state = self.States.H_JUMPING
-            elif (self.state == 'S_JUMPING' or self.state == 'H_FALLING') and self.vector_x == 0:
-                self.state = self.States.S_JUMPING
+                self.state = s.CROUCHING
+
+        elif jumping:
+            if st == 'H_JUMPING':
+                self.state = s.H_JUMPING
+            elif (st == 'S_JUMPING' or st == 'H_FALLING') and self.vector_x == 0:
+                self.state = s.S_JUMPING
             else:
-                self.state = self.States.JUMPING
-        elif self.vector_y == 0 and self.hanging:
-            self.state = self.States.HANGING
+                self.state = s.JUMPING
+
+        elif hanging:
+            self.state = s.HANGING
             if self.vector_x != 0:
-                self.state = self.States.H_WALKING
-        elif self.vector_y > 0 or (self.airborne and not self.hanging):
-            if self.state == 'H_FALLING' or self.state == 'S_JUMPING' or self.last_state == 'H_CROUCHING':
-                self.state = self.States.H_FALLING
-            elif self.state == 'H_J_FALLING' or self.state == 'H_JUMPING':
-                self.state = self.States.H_J_FALLING
+                self.state = s.H_WALKING
+
+        elif falling:  # self.vector_y > 0 or (airborne and not hanging):
+            if st == 'H_FALLING' or st == 'S_JUMPING' or self.last_state == 'H_CROUCHING':
+                self.state = s.H_FALLING
+            elif st == 'HJ_FALLING' or st == 'H_JUMPING':
+                self.state = s.HJ_FALLING
             else:
-                self.state = self.States.FALLING
-        elif self.vector_x != 0:
-            #if self.state == 'HANGING' or self.state == 'H_WALKING':
-            #    self.state = self.States.H_WALKING
-            #else:
-                if self.sprinting:
-                    self.state = self.States.RUNNING
-                else:
-                    self.state = self.States.WALKING
+                self.state = s.FALLING
+
+        elif walking:
+            if sprinting:
+                self.state = s.RUNNING
+            else:
+                self.state = s.WALKING
+
         else:
-            self.state = self.States.IDLE
+            self.state = s.IDLE
+
+        # ---
+
         if self.state != self.stored_state and self.state_change_counter == 1:
             self.last_state = self.stored_state
             self.stored_state = self.state
@@ -122,24 +146,57 @@ class Player(Sprite):
             self.stored_state = self.state
             self.state_change_counter = 1
 
-        if self.state == 'FALLING':
+        if st == 'FALLING':
             if self.last_state == 'HANGING':
                 self.last_state = self.state
-                self.state = self.States.H_FALLING
+                self.state = s.H_FALLING
                 self.stored_state = self.state
             elif self.last_state == 'H_JUMPING':
                 self.last_state = self.state
-                self.state = self.States.H_J_FALLING
+                self.state = s.HJ_FALLING
                 self.stored_state = self.state
-        elif self.state == 'JUMPING':
-            if self.last_state == 'IDLE' or self.last_state == 'CROUCHING':
+
+        elif st == 'JUMPING':
+            if self.last_state == 'IDLE':
                 self.last_state = self.state
-                self.state = self.States.S_JUMPING
+                self.state = s.S_JUMPING
                 self.stored_state = self.state
-            if self.last_state == 'HANGING' or self.last_state == 'H_WALKING' or self.last_state == 'H_CROUCHING' or self.last_state == 'H_C_WALKING':
+            elif self.last_state in ('HANGING', 'H_WALKING', 'H_CROUCHING', 'HC_WALKING'):
                 self.last_state = self.state
-                self.state = self.States.H_JUMPING
+                self.state = s.H_JUMPING
                 self.stored_state = self.state
+
+    def slide(self, dist=0):
+        if self.crouching:
+            if not self.sliding and not self.on_wall:#self.state != 'IDLE':
+                self.slide_fx()
+                Sound_sphere(origin=self.collision.rect.center, groups=self.sound_spheres, max_radius=100)
+
+            if dist:
+                self.sliding = dist
+
+            self.on_wall = self.move(hor_speed = self.speed * self.sliding)
+
+            if self.on_wall:
+                self.crash_fx()
+                Sound_sphere(origin=self.on_wall[0].center, groups=self.sound_spheres)
+
+            # Boing boing ~
+            #if collision:
+            #    self.sliding *= -1
+            #    self.vector_x = self.speed * self.sliding
+
+            self.block_right_border()
+            self.block_left_border()
+
+            self.slide_tick_counter += delta.time()
+
+            if (self.slide_tick_counter >= 0.3 and not self.airborne) or self.vector_x == 0 or self.hanging:
+                self.stand()
+                self.can_crouch = False
+                self.sliding = False
+                self.slide_tick_counter = 0
+
 
     def allow_movement(self):
         if self.can_move:
@@ -151,135 +208,131 @@ class Player(Sprite):
             pressing_z = pygame.key.get_pressed()[pygame.K_z]
 
             self.sprinting = pressing_shift
-            self.airborne = self.vector_y != 0
-
-            airborne = self.airborne
             crouching = self.crouching
             hanging = self.hanging
-            crawling = crouching and (not airborne or hanging)
+            self.airborne = self.vector_y != 0 and not hanging
+            airborne = self.airborne
             sprinting = self.sprinting
             sliding = self.sliding
-            can_slide = self.can_slide
             flying = self.flying
             affected_by_gravity = self.affected_by_gravity
 
 
-            idle = (not pressing_right and not pressing_left and not pressing_up and not pressing_down and (not airborne or flying))
+            idle = not pressing_right and not pressing_left and not pressing_up and not pressing_down and (not airborne or flying)
+
+            if not airborne:
+                self.vector_y = 0
+            if not crouching:
+                self.cramped = False
 
             if not affected_by_gravity and not pressing_up and not pressing_down:
                 self.vector_y = 0
             if idle:
                 self.vector_x = 0
                 self.vector_y = 0
+            if sliding:
+                self.slide()
+            if pressing_down and airborne and not sliding:
+                self.vector_y += self.speed * 8 * delta.time()
+            if sprinting:
+                if pressing_down and self.can_crouch and not (sliding or airborne or hanging):
+                    if not self.flipped:
+                        self.slide(3)
+                    else:
+                        self.slide(-3)
 
-                if self.state == 'CROUCHING':
-                    self.stand()
-                #elif self.last_state == 'FALLING' or self.last_state == 'H_FALLING':
-                #    self.crouch()
+            # ----------------------------------------------------------------------------------------------------------
+            # DIRECTIONS
+
+            if pressing_right and not pressing_left:
+                speed = self.speed
+                if sprinting:
+                    speed *= 2
+                if not sliding:
+                    if crouching and not airborne:
+                        speed *= 0.7
+                    self.on_wall = self.move_right(speed)
+
+                self.block_right_border()
+            elif pressing_left and not pressing_right:
+                speed = self.speed
+                if sprinting:
+                    speed *= 2
+                if not sliding:
+                    if crouching and not airborne:
+                        speed *= 0.7
+                    self.on_wall = self.move_left(speed)
+
+                self.block_left_border()
             else:
-                # ----------------------------------------------------------------------------------------------------------
-                # DIRECTIONS
+                self.vector_x = 0
+                self.step_tick_counter = 0
 
-                if pressing_right and not pressing_left:
-                    speed = self.speed
-                    if sprinting:
-                        speed *= 2
-                    if crawling:
-                        speed *= 0.7
-                    self.move_right(speed)
-                    self.block_right_border()
+            if self.vector_x and not (airborne or sliding or crouching or self.on_wall):
+                self.step_tick_counter += delta.time()
+                step_tick_counter = self.step_tick_counter
+                step_delay = self.step_delay / 2 if sprinting else self.step_delay
 
-                elif pressing_left and not pressing_right:
-                    speed = self.speed
-                    if sprinting:
-                        speed *= 2
-                    if crawling:
-                        speed *= 0.7
-                    self.move_left(speed)
-                    self.block_left_border()
+                if step_tick_counter >= step_delay:
+                    Sound_sphere(origin=self.collision.rect.center, groups=self.sound_spheres, max_radius=abs(self.vector_x/2))
+                    self.step_tick_counter = 0
 
-                else:
-                    self.vector_x = 0
+            # ----------------------------------------------------------------------------------------------------------
+            # JUMP
+            if pressing_up:
+                if flying:
+                    speed = self.speed / 100
+                    self.move_up(speed)
+                elif hanging:
+                    hit_ceiling = self.jump(5)
+                    if not hit_ceiling:
+                        self.hanging = False
+                elif crouching  and self.last_y_direction != -1 and not (airborne or sliding):
+                    cramped = self.stand()
+                    if not cramped:
+                        self.can_jump = False
+                    elif self.can_jump:
+                        self.airborne = True
+                        hit_ceiling = self.jump()
+                        if hit_ceiling:
+                            self.hanging = True
+                            self.airborne = False
+                elif not airborne and self.can_jump:
+                    self.airborne = True
+                    hit_ceiling = self.jump()
+                    if hit_ceiling:
+                        self.hanging = True
+                        self.airborne = False
+            else:
+                self.hanging = False
+                self.can_jump = True
+            # ----------------------------------------------------------------------------------------------------------
+            # CROUCH / SLIDE
 
-                # ----------------------------------------------------------------------------------------------------------
-                # JUMP
-
-                if pressing_up:
-                    if not flying:
-                        if not airborne and not hanging:
-                            self.airborne = True
-                            hit = self.jump()
-                            if hit:
-                                self.hanging = True
-                        elif hanging:
-                            hit = self.jump()
-                            if not hit:
-                                self.hanging = False
-                    else:
-                        speed = self.speed / 100
-                        self.move_up(speed)
-                else:
-                    self.hanging = False
-
-                # ----------------------------------------------------------------------------------------------------------
-                # CROUCH / SLIDE
-                # TODO: Change crouch from hold to toggle in order to not necessitate the player to hold 3 buttons
-                # TODO: FIX: HCJump is higher than HJump
-                # TODO: Transfer slide to right/left movement in order to make Vector_X accurate (Low prio)
-                if pressing_down:
-                    if not flying:
+            if pressing_down:
+                if not flying and not sliding:
+                    if self.can_crouch:
                         self.crouch()
-                        if airborne:
-                            self.vector_y += self.speed * 8 * delta.time()
-                        elif sprinting and can_slide and not hanging:
-                            if pressing_right or sliding == 1:
-                                if not sliding:
-                                    self.slide_fx()
-                                #self.slide(1)
-                                self.sliding = 1
-                                self.move_right(self.speed * 2)
-                                self.block_right_border()
-                                self.slide_tick_counter += delta.time()
-                            elif pressing_left or sliding == -1:
-                                if not sliding:
-                                    self.slide_fx()
-                                #self.slide(-1)
-                                self.sliding = -1
-                                self.move_left(self.speed * 2)
-                                self.block_left_border()
-                                self.slide_tick_counter += delta.time()
-                            else:
-                                self.can_slide = False
-                            if self.slide_tick_counter >= 0.3:
-                                self.can_slide = False
-                                self.sliding = False
-                                #self.stop_slide()
-                                self.slide_tick_counter = 0
-                        else:
-                            self.can_slide = False
                     else:
-                        speed = self.speed / 100
-                        self.move_down(speed)
-
+                        self.stand()
                 else:
-                    self.can_slide = True
-                    #if self.sliding:
-                    #    self.stop_slide()
-                    self.sliding = False
-                    self.stand()
-                    self.slide_tick_counter = 0
-
-                # ----------------------------------------------------------------------------------------------------------
-                # DEBUG NO COLLISION
-
-                if pressing_z:
-                    self.affected_by_gravity = False
-                    self.has_collision = False
-                    self.flying = True
+                    speed = self.speed / 100
+                    self.move_down(speed)
+            else:
+                if crouching and not airborne:
+                    self.can_crouch = False
                 else:
-                    self.affected_by_gravity = True
-                    self.has_collision = True
-                    self.flying = False
+                    self.can_crouch = True
+            # ----------------------------------------------------------------------------------------------------------
+            # DEBUG NO COLLISION
+            if pressing_z:
+                self.affected_by_gravity = False
+                self.has_collision = False
+                self.flying = True
+            else:
+                self.affected_by_gravity = True
+                self.has_collision = True
+                self.flying = False
         else:
             if self.t_right:
                 self.block_right_border()
