@@ -47,8 +47,11 @@ def testing():
 
     #stage.load('assets/maps/tmx/Testing6.tmx')
     #stage.load('assets/maps/tmx/Testing3.tmx')
-    stage.load('assets/maps/tmx/Testing7.tmx')
+    #stage.load('assets/maps/tmx/Testing7.tmx')
 
+    stage.load('assets/maps/tmx/0-0.tmx')
+    stage.set_name('assets/maps/tmx/0-0.tmx')
+    
     light_group = pygame.sprite.Group()
     sun = Light(x=32, y=-50, radius=10, groups=light_group)
 
@@ -58,8 +61,10 @@ def testing():
     # X and Y is the spawn point, you may want to change that to test maps
     # Bottom = x=254, y=344 <- Ignore this
     # Top = x=32, y=-50 <- Ignore this
-    player = Player('assets/Characters/2 Punk/Punk_idle.png', x=32, y=-50, collision_offset=[7, 14], collision_dimensions=(15, 34))  #collision_offset=[2.5, 14], collision_dimensions=(20, 34))
+    #player = Player('assets/Characters/2 Punk/Punk_idle.png', x=32, y=-50, collision_offset=[7, 14], collision_dimensions=(15, 34))  #collision_offset=[2.5, 14], collision_dimensions=(20, 34))
     #player = Player('assets/Characters/Soldier_1/Temp.png', x=32, y=-50, collision_offset=[7, 14], collision_dimensions=(15, 34))  #collision_offset=[2.5, 14], collision_dimensions=(20, 34))
+    player = Player('assets/Characters/2 Punk/Punk_idle.png', x=10, y=160, collision_offset=[7, 14], collision_dimensions=(15, 34))  #collision_offset=[2.5, 14], collision_dimensions=(20, 34))
+
     player.anim.walk = player.anim.populate('assets/Characters/2 Punk/Walk.png', image_count=6)
     player.anim.jump = player.anim.populate('assets/Characters/2 Punk/Punk_jump.png', image_count=4)
     player.anim.run = player.anim.populate('assets/Characters/2 Punk/Punk_run.png', image_count=6)
