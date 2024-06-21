@@ -141,6 +141,7 @@ class Player(Sprite):
                 self.state = self.States.H_JUMPING
                 self.stored_state = self.state
 
+
     def allow_movement(self):
         if self.can_move:
             pressing_right = (pygame.key.get_pressed()[pygame.K_RIGHT] or pygame.key.get_pressed()[pygame.K_d])

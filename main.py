@@ -8,7 +8,7 @@ pygame.mixer.init()
 pygame.display.set_caption('Prison Break - Escape Big Sister')
 
 if testing:
-    load()
+    load(firstCall=True)
     renderWindow()
 
 else:

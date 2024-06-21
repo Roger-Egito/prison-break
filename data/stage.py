@@ -42,6 +42,74 @@ class stage:
         cls.background_group = pygame.sprite.Group()
 
     @classmethod
+    def remove_out_of_bounds_tiles(cls, window):
+        removedTiles = 0
+        tiles = cls.tile_group.sprites()
+        decors = cls.decor_group.sprites()
+        foreground = cls.foreground_group.sprites()
+        background = cls.background_group.sprites()
+
+        for tile in tiles:
+            if tile.rect.x < 0:
+                cls.tile_group.remove(tile)
+                removedTiles += 1
+            elif tile.rect.x > window.width:
+                cls.tile_group.remove(tile)
+                removedTiles += 1
+            elif tile.rect.y < 0:
+                cls.tile_group.remove(tile)
+                removedTiles += 1
+            elif tile.rect.y > window.height:
+                cls.tile_group.remove(tile)
+                removedTiles += 1
+
+        for back in background:
+            if back.rect.x < 0:
+                cls.background_group.remove(back)
+                removedTiles += 1
+            elif back.rect.x > window.width:
+                cls.background_group.remove(back)
+                removedTiles += 1
+            elif back.rect.y < 0:
+                cls.background_group.remove(back)
+                removedTiles += 1
+            elif back.rect.y > window.height:
+                cls.background_group.remove(back)
+                removedTiles += 1
+
+        for fore in foreground:
+            if fore.rect.x < 0:
+                cls.foreground_group.remove(fore)
+                removedTiles += 1
+            elif fore.rect.x > window.width:
+                cls.foreground_group.remove(fore)
+                removedTiles += 1
+            elif fore.rect.y < 0:
+                cls.foreground_group.remove(fore)
+                removedTiles += 1
+            elif fore.rect.y > window.height:
+                cls.foreground_group.remove(fore)
+                removedTiles += 1
+
+        for decor in decors:
+            if decor.rect.x < 0:
+                cls.decor_group.remove(decor)
+                removedTiles += 1
+            elif decor.rect.x > window.width:
+                cls.decor_group.remove(decor)
+                removedTiles += 1
+            elif decor.rect.y < 0:
+                cls.decor_group.remove(decor)
+                removedTiles += 1
+            elif decor.rect.y > window.height:
+                cls.decor_group.remove(decor)
+                removedTiles += 1
+        print(removedTiles)
+
+
+
+
+    @classmethod
     def set_name(cls, filepath):
         cls.last = cls.name
         cls.name = filepath[len(cls.path):-len(cls.extension)]
@@ -49,6 +117,7 @@ class stage:
     @classmethod
     def load(cls, filepath):
         #TODO: Check pygame's sprite.LayeredUpdates
+
         cls.clear()
         file = load_pygame(filepath)
 
@@ -81,43 +150,77 @@ class stage:
             pass
 
     @classmethod
-    def transition(cls, filepath):
+    def transition(cls, filepath, left = False):
         file = load_pygame(filepath)
-
-        for x, y, image in file.get_layer_by_name('Tiles').tiles():
-            coords = (x * 32 + window.width, y * 32)
-            Tile(coords=coords, image=image, groups=cls.tile_group)
-
-        try:
-            for x, y, image in file.get_layer_by_name('Decor').tiles():
+        if not left:
+            for x, y, image in file.get_layer_by_name('Tiles').tiles():
                 coords = (x * 32 + window.width, y * 32)
-                Tile(coords=coords, image=image, groups=cls.decor_group)
-        except ValueError:
-            print('huh')
+                Tile(coords=coords, image=image, groups=cls.tile_group)
 
-        for x, y, image in file.get_layer_by_name('Foreground').tiles():
-            coords = (x * 32 + window.width, y * 32)
-            Tile(coords=coords, image=image, groups=cls.foreground_group)
+            try:
+                for x, y, image in file.get_layer_by_name('Decor').tiles():
+                    coords = (x * 32 + window.width, y * 32)
+                    Tile(coords=coords, image=image, groups=cls.decor_group)
+            except ValueError:
+                print('huh')
+            try:
+                for x, y, image in file.get_layer_by_name('Foreground').tiles():
+                    coords = (x * 32 + window.width, y * 32)
+                    Tile(coords=coords, image=image, groups=cls.foreground_group)
+            except:
+                print("No foreground")
 
-        for x, y, image in file.get_layer_by_name('Background').tiles():
-            coords = (x * 32 + window.width, y * 32)
-            Tile(coords=coords, image=image, groups=cls.background_group)
+            try:
+                for x, y, image in file.get_layer_by_name('Background').tiles():
+                    coords = (x * 32 + window.width, y * 32)
+                    Tile(coords=coords, image=image, groups=cls.background_group)
+            except:
+                print("No background")
+        else:
+            for x, y, image in file.get_layer_by_name('Tiles').tiles():
+                coords = (x * 32 - window.width, y * 32)
+                Tile(coords=coords, image=image, groups=cls.tile_group)
+
+            try:
+                for x, y, image in file.get_layer_by_name('Decor').tiles():
+                    coords = (x * 32 - window.width, y * 32)
+                    Tile(coords=coords, image=image, groups=cls.decor_group)
+            except ValueError:
+                print('huh')
+            try:
+                for x, y, image in file.get_layer_by_name('Foreground').tiles():
+                    coords = (x * 32 - window.width, y * 32)
+                    Tile(coords=coords, image=image, groups=cls.foreground_group)
+            except:
+                print("No foreground")
+
+            try:
+                for x, y, image in file.get_layer_by_name('Background').tiles():
+                    coords = (x * 32 - window.width, y * 32)
+                    Tile(coords=coords, image=image, groups=cls.background_group)
+            except:
+                print("No background")
 
     @classmethod
-    def move(cls):
-        step = 2
-        if stage.name == 'Screenshot1':
-            cls.tile_group.update(-step)
-            cls.decor_group.update(-step)
-            cls.foreground_group.update(-step)
-            cls.background_group.update(-step)
-            cls.x -= step
-        elif stage.name == 'Screenshot2':
-            cls.tile_group.update(step)
-            cls.decor_group.update(step)
-            cls.foreground_group.update(step)
-            cls.background_group.update(step)
-            cls.x += step
+    def move(cls, width, lefttoright = False):
+        if lefttoright:
+            step = -2
+        else:
+            step = 2
+        #if stage.name == 'Screenshot1':
+        cls.tile_group.update(-step)
+        cls.decor_group.update(-step)
+        cls.foreground_group.update(-step)
+        cls.background_group.update(-step)
+        cls.x -= step
+        print(cls.x)
+        return -cls.x
+        #elif stage.name == 'Screenshot2':
+            # cls.tile_group.update(step)
+            # cls.decor_group.update(step)
+            # cls.foreground_group.update(step)
+            # cls.background_group.update(step)
+            # cls.x += step
 
     @classmethod
     def render(cls, player):
@@ -141,7 +244,8 @@ class stage:
 
         cls.decor_group.draw(window.display)
         cls.background_group.draw(window.display)
-        player.render()
+        if player is not None:
+            player.render()
         cls.tile_group.draw(window.display)
         cls.foreground_group.draw(window.display)
 
