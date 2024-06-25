@@ -6,6 +6,8 @@ from data.config import clock, fps, volume, quit_game
 from data.stage import *
 from data.player import *
 import json
+from data.config import delta
+
 
 currentStageLine = 0
 currentStageColumn = 0
@@ -25,11 +27,12 @@ player.anim.h_c_walk = player.anim.populate('assets/Characters/2 Punk/HCWalk.png
 player.anim.h_jump = player.anim.populate('assets/Characters/2 Punk/Punk_doublejump.png', image_count=6)
 player.anim.slide = player.anim.img('assets/Characters/2 Punk/Slide.png')
 
-def generalRenderer(renderPlayer = True):
+def generalRenderer(renderPlayer = True, transitioning = False):
     if renderPlayer:
         stage.render(player)
         player.apply_gravity()
-        player.allow_movement()
+        if not transitioning:
+            player.allow_movement()
         player.update_collision()
         player.state_control()
         player.animate()
@@ -50,7 +53,7 @@ def generalRenderer(renderPlayer = True):
 
 def renderWindow():
     while True:
-        #print(player.x,', ', player.y)
+        print(currentStageLine, ' ', currentStageColumn)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit_game()
@@ -64,7 +67,6 @@ def load(right=False, firstCall = False):
     file = open("assets/maps/mapInfo.JSON")
     jason = json.load(file)
 
-
     if not firstCall:
         if not right:
             stage.transition(filepath)
@@ -72,26 +74,26 @@ def load(right=False, firstCall = False):
             stage.transition(filepath, True)
         stagex = 0
         while stagex < window.width:
-            generalRenderer(False)
-            player.x -= 2
+            print(stagex)
+            generalRenderer(transitioning = True)
             if not right:
-                stagex = stage.move(window)
+                stagex = stage.move(player=player, deltatime=delta.time())
             else:
-                stagex = -stage.move(window, True)
+                stagex = stage.move(True, player=player, deltatime=delta.time())
         stage.x = 0
         stage.remove_out_of_bounds_tiles(window)
 
     else:
         stage.load(filepath)
     stage.set_name(filepath)
-    if right:
-        playerSpawn = jason[mapPosition]["spawnRight"]
-        player.x = window.width+playerSpawn[0]
-        player.y = playerSpawn[1]
-    else:
-        playerSpawn = jason[mapPosition]["spawnLeft"]
-        player.x = playerSpawn[0]
-        player.y = playerSpawn[1]
+    # if right:
+    #     playerSpawn = jason[mapPosition]["spawnRight"]
+    #     player.x = window.width+playerSpawn[0]
+    #     player.y = playerSpawn[1]
+    # else:
+    #     playerSpawn = jason[mapPosition]["spawnLeft"]
+    #     player.x = playerSpawn[0]
+    #     player.y = playerSpawn[1]
     file.close()
 
 def loadFrontMap():

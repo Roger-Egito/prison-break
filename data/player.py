@@ -188,6 +188,7 @@ class Player(Sprite):
                     if crawling:
                         speed *= 0.7
                     self.move_right(speed)
+
                     self.block_right_border()
 
                 elif pressing_left and not pressing_right:
@@ -197,6 +198,7 @@ class Player(Sprite):
                     if crawling:
                         speed *= 0.7
                     self.move_left(speed)
+
                     self.block_left_border()
 
                 else:

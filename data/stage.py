@@ -1,7 +1,10 @@
+import math
+
 from data.tile import *
 from data.img import Background
 from data.config import window
 from pytmx.util_pygame import *
+
 
 
 class stage:
@@ -202,25 +205,23 @@ class stage:
                 print("No background")
 
     @classmethod
-    def move(cls, width, lefttoright = False):
+    def move(cls, lefttoright = False, player = None, deltatime = 0.1):
+        print(deltatime)
         if lefttoright:
-            step = -2
+            step = -20
         else:
-            step = 2
-        #if stage.name == 'Screenshot1':
+            step = 20
         cls.tile_group.update(-step)
         cls.decor_group.update(-step)
         cls.foreground_group.update(-step)
         cls.background_group.update(-step)
-        cls.x -= step
+        cls.x -= int(step*deltatime)
+        if player is not None:
+            player.x -= int(step*deltatime)
         print(cls.x)
-        return -cls.x
-        #elif stage.name == 'Screenshot2':
-            # cls.tile_group.update(step)
-            # cls.decor_group.update(step)
-            # cls.foreground_group.update(step)
-            # cls.background_group.update(step)
-            # cls.x += step
+        print(int(step*deltatime))
+        return abs(cls.x)
+
 
     @classmethod
     def render(cls, player):
