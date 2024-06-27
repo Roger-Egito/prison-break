@@ -53,7 +53,7 @@ def generalRenderer(renderPlayer = True, transitioning = False):
 
 def renderWindow():
     while True:
-        print(currentStageLine, ' ', currentStageColumn)
+        #print(currentStageLine, ' ', currentStageColumn)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit_game()
@@ -77,9 +77,19 @@ def load(right=False, firstCall = False):
             print(stagex)
             generalRenderer(transitioning = True)
             if not right:
-                stagex = stage.move(player=player, deltatime=delta.time())
+                playerSpawn = jason[mapPosition]["spawnLeft"]
+                if player.x <= playerSpawn[0]:
+                    stagex = stage.move(player=player, movePlayer=False)
+                else:
+                    stagex = stage.move(player=player)
             else:
-                stagex = stage.move(True, player=player, deltatime=delta.time())
+                playerSpawn = jason[mapPosition]["spawnRight"]
+                if player.x+20 >= window.width+playerSpawn[0]:
+                    print("não mova")
+                    stagex = stage.move(True, player=player, movePlayer=False)
+                else:
+                    print("mova")
+                    stagex = stage.move(True, player=player)
         stage.x = 0
         stage.remove_out_of_bounds_tiles(window)
 

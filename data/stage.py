@@ -205,8 +205,7 @@ class stage:
                 print("No background")
 
     @classmethod
-    def move(cls, lefttoright = False, player = None, deltatime = 0.1):
-        print(deltatime)
+    def move(cls, lefttoright = False, player = None, movePlayer = True):
         if lefttoright:
             step = -20
         else:
@@ -215,11 +214,10 @@ class stage:
         cls.decor_group.update(-step)
         cls.foreground_group.update(-step)
         cls.background_group.update(-step)
-        cls.x -= int(step*deltatime)
-        if player is not None:
-            player.x -= int(step*deltatime)
-        print(cls.x)
-        print(int(step*deltatime))
+        cls.x -= int(step)
+        if player is not None and movePlayer:
+            player.x -= int(step)
+        print(player.x, ' ', step)
         return abs(cls.x)
 
 
