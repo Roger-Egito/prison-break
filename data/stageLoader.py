@@ -6,6 +6,8 @@ from data.config import clock, fps, volume, quit_game
 from data.stage import *
 from data.player import *
 import json
+from data.config import delta
+
 
 currentStageLine = 0
 currentStageColumn = 0
@@ -25,49 +27,85 @@ player.anim.h_c_walk = player.anim.populate('assets/Characters/2 Punk/HCWalk.png
 player.anim.h_jump = player.anim.populate('assets/Characters/2 Punk/Punk_doublejump.png', image_count=6)
 player.anim.slide = player.anim.img('assets/Characters/2 Punk/Slide.png')
 
+def generalRenderer(renderPlayer = True, transitioning = False):
+    if renderPlayer:
+        stage.render(player)
+        player.apply_gravity()
+        if not transitioning:
+            player.allow_movement()
+        player.update_collision()
+        player.state_control()
+        player.animate()
+    else:
+        stage.render(None)
+    fps.render()
+
+    window.draw()
+    pygame.display.update()
+
+    # UPDATE
+
+    clock.tick(fps.max)
+    volume.check_mute()
+    delta.time_update()
+
+
+
 def renderWindow():
     while True:
-        print(player.x,', ', player.y)
+        #print(currentStageLine, ' ', currentStageColumn)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit_game()
 
-        stage.render(player)
-        fps.render()
+        generalRenderer()
 
-        window.draw()
-        pygame.display.update()
+def load(right=False, firstCall = False):
 
-        # UPDATE
-
-        clock.tick(fps.max)
-        volume.check_mute()
-        delta.time_update()
-
-        player.apply_gravity()
-        player.allow_movement()
-        player.update_collision()
-        player.state_control()
-        player.animate()
-
-def load(right=False):
     mapPosition = str(currentStageLine)+'-'+str(currentStageColumn)
     filepath = 'assets/maps/tmx/'+mapPosition+'.tmx'
     file = open("assets/maps/mapInfo.JSON")
     jason = json.load(file)
-    if right:
-        playerSpawn = jason[mapPosition]["spawnRight"]
-        player.x = window.width-playerSpawn[0]
-        player.y = playerSpawn[1]
+
+    if not firstCall:
+        if not right:
+            stage.transition(filepath)
+        else:
+            stage.transition(filepath, True)
+        stagex = 0
+        while stagex < window.width:
+            print(stagex)
+            generalRenderer(transitioning = True)
+            if not right:
+                playerSpawn = jason[mapPosition]["spawnLeft"]
+                if player.x <= playerSpawn[0]:
+                    stagex = stage.move(player=player, movePlayer=False)
+                else:
+                    stagex = stage.move(player=player)
+            else:
+                playerSpawn = jason[mapPosition]["spawnRight"]
+                if player.x+20 >= window.width+playerSpawn[0]:
+                    print("não mova")
+                    stagex = stage.move(True, player=player, movePlayer=False)
+                else:
+                    print("mova")
+                    stagex = stage.move(True, player=player)
+        stage.x = 0
+        stage.remove_out_of_bounds_tiles(window)
+
     else:
-        playerSpawn = jason[mapPosition]["spawnLeft"]
-        player.x = playerSpawn[0]
-        player.y = playerSpawn[1]
-
-
-    stage.load(filepath)
+        stage.load(filepath)
     stage.set_name(filepath)
+    # if right:
+    #     playerSpawn = jason[mapPosition]["spawnRight"]
+    #     player.x = window.width+playerSpawn[0]
+    #     player.y = playerSpawn[1]
+    # else:
+    #     playerSpawn = jason[mapPosition]["spawnLeft"]
+    #     player.x = playerSpawn[0]
+    #     player.y = playerSpawn[1]
     file.close()
+
 def loadFrontMap():
     global currentStageColumn
     currentStageColumn += 1
