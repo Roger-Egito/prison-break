@@ -1,7 +1,7 @@
 import pygame
 from data.config import window, render, delta
 
-class img:
+class Img:
     def __init__(self, image, has_alpha=True, stretch=False, x=0, y=0):
         self.load = pygame.image.load
         self.transform = pygame.transform
@@ -47,8 +47,8 @@ class img:
     def render(self):
         render(self.img, self.coords)
 
-class Background(img):
-    def __init__(self, image, has_alpha=False, stretch=True, x=0, y=0):
+class Background(Img):
+    def __init__(self, image, has_alpha=True, stretch=True, x=0, y=0):
         super().__init__(image, has_alpha, stretch, x, y)
 
     def render_horizontal_scrolling(self, speed=50, direction=-1, speed_mult=1):
@@ -58,6 +58,13 @@ class Background(img):
         if (self.x * direction) >= self.width:
             self.x = self.default_x
 
-class Foreground(img):
+    def render_vertical_scrolling(self, speed=50, direction=1, speed_mult=1):
+        render(self.img, self.coords)
+        render(self.img, (self.x, self.y + (self.height * -direction)))
+        self.y += speed * direction * speed_mult * delta.time()
+        if (self.y * direction) >= self.height:
+            self.y = self.default_y
+
+class Foreground(Img):
     def __init__(self, image, has_alpha=True, stretch=True, x=0, y=0):
         super().__init__(image, has_alpha, stretch, x, y)

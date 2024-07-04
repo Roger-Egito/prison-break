@@ -1,4 +1,5 @@
 import pygame
+from data.config import delta
 
 class Anim:
     """sprite strip animator
@@ -8,7 +9,7 @@ class Anim:
     strip wraps to the next row.
     """
 
-    def __init__(self, loop=True, frames=60, speed=1):
+    def __init__(self, loop=True, delay=0.25, speed=1):
         """construct a SpriteStripAnim
 
         filename, dimensions, count, and colorkey are the same arguments used
@@ -23,19 +24,33 @@ class Anim:
         #self.images = images
 
         # Sheets
+        self.last_sheet = []
         self.idle = []
+        self.idle2 = []
+        self.idle3 = []
+        self.idle4 = []
+        self.idle5 = []
+        self.random_idle = []
         self.walk = []
         self.jump = []
+        self.s_jump = []
         self.run = []
         self.crouch = []
+        self.slide = []
+        self.hang = []
+        self.h_crouch = []
+        self.h_walk = []
+        self.hc_walk = []
+        self.h_fall = []
+        self.h_jump = []
 
-        self.counter = 0
+        self.frame = 0
         self.loop = loop
-        self.total_frames = frames
-        self.frame = frames
+        self.tick_counter = 0
+        self.delay = delay
         self.speed = 1
 
-    def sheet_to_img(self, file, dimensions=(4, 14, 20, 34), has_alpha=True, colorkey=None):
+    def img(self, file, dimensions=(0, 0, 48, 48), has_alpha=True, colorkey=None):
         "Loads image from x,y,x+offset,y+offset"
         rectangle = pygame.Rect(dimensions)
         image = pygame.Surface(rectangle.size)
@@ -49,32 +64,48 @@ class Anim:
         # self.img = image
         return image
 
-    def populate(self, file, dimensions=(4, 14, 20, 34), image_count=4, step=1, has_alpha=True, colorkey=None):
+    def populate(self, file, dimensions=(0, 0, 48, 48), image_count=4, step=1, has_alpha=True, colorkey=None):  #(4, 14, 20, 34)
         "Loads a strip of images and returns them as a list"
         tups = [(dimensions[0] + dimensions[2] * x * step, dimensions[1], dimensions[2], dimensions[3])
                 for x in range(image_count)]
-        images = [self.sheet_to_img(file, dimension, has_alpha, colorkey) for dimension in tups]
+        images = [self.img(file, dimension, has_alpha, colorkey) for dimension in tups]
         return images
 
-    def iter(self):
-        self.counter = 0
-        self.frame = self.total_frames
-        return self
+    #def iter(self):
+    #    self.frame = 0
+    #    self.frame = self.total_frames
+    #    return self
 
-    def next(self, sheet, speed_mult=1, loop=True, last_frame=0):
+    def next(self, sheet, speed_mult=1, loop=True, first_frame=0, last_frame=0, step=1):  # Step < 0 reverses animation
+
+        if sheet != self.last_sheet:
+            self.frame = 0
+        self.last_sheet = sheet
         last_frame = len(sheet)-1 if last_frame == 0 else last_frame
-        if self.counter > last_frame:
-            if not loop:
-                self.counter = last_frame
-                return sheet[self.counter]
-            else:
-                self.counter = 0
-        image = sheet[self.counter]
-        frames = self.total_frames / max(0.01, speed_mult)
-        self.frame -= 1
-        if self.frame == 0:
-            self.counter += 1
-            self.frame = frames
+
+        if step >= 0:
+            if self.frame + first_frame > last_frame:
+                if not loop:
+                    self.frame = last_frame
+                    return sheet[self.frame]
+                else:
+                    self.frame = 0
+            image = sheet[self.frame + first_frame]
+        else:
+            if last_frame + self.frame < first_frame:
+                if not loop:
+                    self.frame = first_frame - last_frame
+                    return sheet[first_frame]
+                else:
+                    self.frame = 0
+            image = sheet[last_frame + self.frame]
+
+        self.tick_counter += delta.time() * speed_mult
+
+        if self.tick_counter >= self.delay:
+            self.frame += step
+            self.tick_counter = 0
+
         return image
 
 

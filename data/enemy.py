@@ -4,7 +4,7 @@ import pygame
 import random
 
 class Enemy(Sprite):
-    speed = 50
+    speed_mult = 0.75
 
     def distance_from(self, coords):
         distance = (coords[0] - self.center_x, coords[1] - self.center_y)
