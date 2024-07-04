@@ -1,4 +1,5 @@
 import pygame
+from data.config import window
 
 class Collision:
 
@@ -27,7 +28,13 @@ class Collision:
         self.flipped = flipped
         self.default_dimensions = dimensions
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.l_radius = 5
+        self.light = pygame.Rect(self.x - self.l_radius - ((self.height - self.width) / 2), self.y - self.l_radius, self.height + 2*self.l_radius, self.height + 2*self.l_radius)
+        #self.light_circle =
         self.anchor = anchor
+
+    def render_light_circle(self):
+        pygame.draw.circle(window.display, (200, 150, 100, 10), self.light.center, self.light.width)
 
     @property
     def coords(self):
@@ -96,6 +103,11 @@ class Collision:
 
         self.rect.x = round(self.x)
         self.rect.y = round(self.y)
+        self.update_light()
+
+    def update_light(self):
+        self.light.x = self.rect.x - self.l_radius - ((self.height - self.width) / 2)
+        self.light.y = self.rect.y - self.l_radius
 
     def update_x(self):
         if self.flipped:
@@ -119,5 +131,13 @@ class Collision:
         for tile in tiles:
             rect = tile.rect
             if self.rect.colliderect(rect):
+                hit_list.append(rect)
+        return hit_list
+
+    def get_line_hits(self, tiles, x, y, width, height):
+        hit_list = []
+        for tile in tiles:
+            rect = tile.rect
+            if rect.clipline((x, y), (width, height)):
                 hit_list.append(rect)
         return hit_list

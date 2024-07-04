@@ -13,6 +13,7 @@ class stage:
     name = ''
     last = ''
     tile_group = pygame.sprite.Group()
+    tile_group_lighted = pygame.sprite.Group()
     decor_group = pygame.sprite.Group()
     foreground_group = pygame.sprite.Group()
     background_group = pygame.sprite.Group()
@@ -36,6 +37,8 @@ class stage:
     #background_5 = Background(snowy_folder+'Ground_02.png')
     #background_6 = Background(snowy_folder+'Snow.png')
     #background_7 = Background('tiled_exports/caua.png')
+
+    foreground = Background('assets/Background/overlays/11.png')
 
     @classmethod
     def clear(cls):
@@ -220,9 +223,8 @@ class stage:
         print(player.x, ' ', step)
         return abs(cls.x)
 
-
     @classmethod
-    def render(cls, player):
+    def background_render(cls):
         # CLOUDS
         cls.background_1.render()
         cls.background_2.render()
@@ -243,8 +245,10 @@ class stage:
 
         cls.decor_group.draw(window.display)
         cls.background_group.draw(window.display)
+        
         if player is not None:
             player.render()
+            
         cls.tile_group.draw(window.display)
         cls.foreground_group.draw(window.display)
 

@@ -26,6 +26,11 @@ class Anim:
         # Sheets
         self.last_sheet = []
         self.idle = []
+        self.idle2 = []
+        self.idle3 = []
+        self.idle4 = []
+        self.idle5 = []
+        self.random_idle = []
         self.walk = []
         self.jump = []
         self.s_jump = []
@@ -35,7 +40,7 @@ class Anim:
         self.hang = []
         self.h_crouch = []
         self.h_walk = []
-        self.h_c_walk = []
+        self.hc_walk = []
         self.h_fall = []
         self.h_jump = []
 
