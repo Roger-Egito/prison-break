@@ -21,64 +21,17 @@ class Player(Sprite):
     def block_right_border(self):
         beyond_border = self.collision.right >= window.width
         if beyond_border or self.can_move is False:
-            '''
-            if stage.name == 'Screenshot1':
-                if self.can_move is True:
-                    stage.transition('assets/maps/tmx/Screenshot2.tmx')
-                if stage.x > -window.width:
-                    stage.move()
-                    #self.x -= 3.84
-                    self.update_rect_x()
-                    self.can_move = False
-                    self.affected_by_gravity = False
-                    self.t_right = True
-                else:
-                    stage.set_name('assets/maps/tmx/Screenshot2.tmx')
-                    self.can_move = True
-                    self.affected_by_gravity = True
-                    self.t_right = False
-                    stage.x = 0
-                #self.set_left(0)
-            elif stage.name == '0-0':
-                from data.stageLoader import loadFrontMap
-                loadFrontMap()
-            '''
             from data.stageLoader import loadFrontMap
             loadFrontMap()
         return beyond_border
 
     def block_left_border(self):
+        print("amigo estou aqui")
         beyond_border = self.collision.left <= 0
         if beyond_border or self.can_move is False:
-            '''
-            #if stage.name == 'Screenshot2':
-            #    stage.load('assets/maps/tmx/Screenshot1.tmx')
-            #    stage.set_name('assets/maps/tmx/Screenshot1.tmx')
-            #    self.set_right(window.width)
-            #else:
-            if stage.name == 'Screenshot2':
-                if self.can_move is True:
-                    stage.transition('assets/maps/tmx/Screenshot1.tmx')
-                if stage.x < window.width:
-                    stage.move()
-                    self.x += 3.84
-                    self.update_rect_x()
-                    self.can_move = False
-                    self.affected_by_gravity = False
-                    self.t_left = True
-                else:
-                    stage.set_name('assets/maps/tmx/Screenshot1.tmx')
-                    self.can_move = True
-                    self.affected_by_gravity = True
-                    self.t_left = False
-                    stage.x = 0
-                #self.set_left(0)
-            else:
-                self.set_left(0)
-            '''
+            print("passei da borda")
             from data.stageLoader import loadBackMap
             loadBackMap()
-
         return beyond_border
 
     def state_control(self):
@@ -255,6 +208,7 @@ class Player(Sprite):
                     
                 self.block_right_border()
             elif pressing_left and not pressing_right:
+
                 speed = self.speed
                 if sprinting:
                     speed *= 2
@@ -263,6 +217,7 @@ class Player(Sprite):
                         speed *= 0.7
                         
                     self.on_wall = self.move_left(speed)
+                self.block_left_border()
             else:
                 self.vector_x = 0
                 self.step_tick_counter = 0

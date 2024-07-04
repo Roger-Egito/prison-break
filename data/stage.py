@@ -208,23 +208,23 @@ class stage:
                 print("No background")
 
     @classmethod
-    def move(cls, lefttoright = False, player = None, movePlayer = True):
-        if lefttoright:
-            step = -20
-        else:
+    def move(cls, left_to_right = False, player = None, movePlayer = True):
+        if left_to_right:
             step = 20
-        cls.tile_group.update(-step)
-        cls.decor_group.update(-step)
-        cls.foreground_group.update(-step)
-        cls.background_group.update(-step)
+        else:
+            step = -20
+        cls.tile_group.update(method=1, step=step)
+        cls.decor_group.update(method=1, step=step)
+        cls.foreground_group.update(method=1, step=step)
+        cls.background_group.update(method=1, step=step)
         cls.x -= int(step)
         if player is not None and movePlayer:
-            player.x -= int(step)
+            player.x += int(step)
         print(player.x, ' ', step)
         return abs(cls.x)
 
     @classmethod
-    def background_render(cls):
+    def background_render(cls, player):
         # CLOUDS
         cls.background_1.render()
         cls.background_2.render()
@@ -248,6 +248,8 @@ class stage:
         
         if player is not None:
             player.render()
+        else:
+            print("aaahh, sumiu")
             
         cls.tile_group.draw(window.display)
         cls.foreground_group.draw(window.display)

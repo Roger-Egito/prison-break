@@ -23,13 +23,17 @@ player.anim.h_fall = player.anim.populate('assets/Characters/2 Punk/Happy.png', 
 player.anim.s_jump = player.anim.populate('assets/Characters/2 Punk/Fall.png', image_count=4)
 #player.anim.h_jump = player.anim.populate('assets/Characters/2 Punk/Pullup.png', image_count=6, dimensions=(0, 41, 48, 48))
 player.anim.h_walk = player.anim.populate('assets/Characters/2 Punk/Fall.png', image_count=4)
-player.anim.h_c_walk = player.anim.populate('assets/Characters/2 Punk/HCWalk.png', image_count=2)
+player.anim.hc_walk = player.anim.populate('assets/Characters/2 Punk/HCWalk.png', image_count=2)
 player.anim.h_jump = player.anim.populate('assets/Characters/2 Punk/Punk_doublejump.png', image_count=6)
 player.anim.slide = player.anim.img('assets/Characters/2 Punk/Slide.png')
-
+#player.anim.slide = player.anim.img('assets/Characters/Soldier_1/Temp.png')
+player.anim.idle2 = player.anim.populate('assets/Characters/2 Punk/Talk.png', image_count=6)
+player.anim.idle3 = player.anim.populate('assets/Characters/2 Punk/Use.png', image_count=6)
+player.anim.idle4 = player.anim.populate('assets/Characters/2 Punk/Happy.png', image_count=6)
+player.anim.idle5 = player.anim.populate('assets/Characters/2 Punk/Idle2.png', image_count=4)
 def generalRenderer(renderPlayer = True, transitioning = False):
     if renderPlayer:
-        stage.render(player)
+        stage.background_render(player)
         player.apply_gravity()
         if not transitioning:
             player.allow_movement()
@@ -37,7 +41,7 @@ def generalRenderer(renderPlayer = True, transitioning = False):
         player.state_control()
         player.animate()
     else:
-        stage.render(None)
+        stage.background_render(None)
     fps.render()
 
     window.draw()
