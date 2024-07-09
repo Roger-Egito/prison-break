@@ -2,12 +2,39 @@ from data.sprite import Sprite
 from data.config import window, delta
 from data.stage import *
 from data.hearing import *
+#from data.game import game_over, stage_restart
 import pygame
 
 
 class Player(Sprite):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.anim.walk = self.anim.populate('assets/Characters/2 Punk/Walk.png', image_count=6)
+        self.anim.jump = self.anim.populate('assets/Characters/2 Punk/Punk_jump.png', image_count=4)
+        self.anim.run = self.anim.populate('assets/Characters/2 Punk/Punk_run.png', image_count=6)
+        self.anim.crouch = self.anim.populate('assets/Characters/2 Punk/Sitdown.png', image_count=3)
+        self.anim.hang = self.anim.populate('assets/Characters/2 Punk/Fall.png', image_count=4)
+        self.anim.h_crouch = self.anim.populate('assets/Characters/2 Punk/HCWalk.png', image_count=2)
+        self.anim.h_fall = self.anim.populate('assets/Characters/2 Punk/Happy.png', image_count=6)
+        self.anim.s_jump = self.anim.populate('assets/Characters/2 Punk/Fall.png', image_count=4)
+        #self.anim.pullup = self.anim.populate('assets/Characters/2 Punk/Pullup.png', image_count=6, dimensions=(0, 41, 48, 48))
+        self.anim.h_walk = self.anim.populate('assets/Characters/2 Punk/Fall.png', image_count=4)
+        self.anim.hc_walk = self.anim.populate('assets/Characters/2 Punk/HCWalk.png', image_count=2)
+        self.anim.h_jump = self.anim.populate('assets/Characters/2 Punk/Punk_doublejump.png', image_count=6)
+        #self.anim.walk = self.anim.populate('assets/Characters/2 Punk/Roll.png', image_count=4)
+        self.anim.slide = self.anim.img('assets/Characters/2 Punk/Slide.png')
+        # self.anim.slide = self.anim.img('assets/Characters/Soldier_1/Temp.png')
+        self.anim.idle2 = self.anim.populate('assets/Characters/2 Punk/Talk.png', image_count=6)
+        self.anim.idle3 = self.anim.populate('assets/Characters/2 Punk/Use.png', image_count=6)
+        self.anim.idle4 = self.anim.populate('assets/Characters/2 Punk/Happy.png', image_count=6)
+        self.anim.idle5 = self.anim.populate('assets/Characters/2 Punk/Idle2.png', image_count=4)
+        self.anim.roll = self.anim.populate('assets/Characters/2 Punk/Roll.png', image_count=4)
+
     slide_tick_counter = 0
     slide_delay = 0.5
+    whistle_tick_counter = 0
     can_move = True
     can_crouch = True
     can_jump = True
@@ -20,18 +47,20 @@ class Player(Sprite):
 
     def block_right_border(self):
         beyond_border = self.collision.right >= window.width
-        if beyond_border or self.can_move is False:
-            from data.stageLoader import loadFrontMap
-            loadFrontMap()
+        if beyond_border or stage.in_transition:
+            self.sound_spheres.empty()
+            self.sliding = False
+            self.slide_tick_counter = 0
+            stage.transition_right(self)
         return beyond_border
 
     def block_left_border(self):
-        print("amigo estou aqui")
         beyond_border = self.collision.left <= 0
-        if beyond_border or self.can_move is False:
-            print("passei da borda")
-            from data.stageLoader import loadBackMap
-            loadBackMap()
+        if beyond_border or stage.in_transition:
+            self.sound_spheres.empty()
+            self.sliding = False
+            self.slide_tick_counter = 0
+            stage.transition_left(self)
         return beyond_border
 
     def state_control(self):
@@ -46,7 +75,15 @@ class Player(Sprite):
         jumping = self.vector_y < 0  # and airborne and not flying
         falling = self.vector_y > 0
 
-        if crouching and (self.last_state != 'HC_WALKING' or hanging):
+        if st == 'ROLLING':
+            if self.anim.animation_is_over(self.anim.roll):
+                self.rolling = False
+
+        if self.rolling:
+          self.state = s.ROLLING
+
+
+        elif crouching and (self.last_state != 'HC_WALKING' or hanging):
             if hanging:
                 self.state = s.H_CROUCHING
                 if walking:
@@ -132,7 +169,10 @@ class Player(Sprite):
 
             if self.on_wall:
                 self.crash_fx()
-                Sound_sphere(origin=self.on_wall[0].center, groups=self.sound_spheres)
+                if self.on_wall[0].hca:
+                    Sound_sphere(origin=self.on_wall[0].collision.rect.center, groups=self.sound_spheres)
+                else:
+                    Sound_sphere(origin=self.on_wall[0].rect.center, groups=self.sound_spheres)
 
             # Boing boing ~
             #if collision:
@@ -151,13 +191,16 @@ class Player(Sprite):
                 self.slide_tick_counter = 0
 
     def allow_movement(self):
-        if self.can_move:
+        if self.can_move and not stage.in_transition:
             pressing_right = (pygame.key.get_pressed()[pygame.K_RIGHT] or pygame.key.get_pressed()[pygame.K_d])
             pressing_left = (pygame.key.get_pressed()[pygame.K_LEFT] or pygame.key.get_pressed()[pygame.K_a])
             pressing_up = pygame.key.get_pressed()[pygame.K_UP] or pygame.key.get_pressed()[pygame.K_SPACE] or pygame.key.get_pressed()[pygame.K_w]
             pressing_down = pygame.key.get_pressed()[pygame.K_DOWN] or (pygame.key.get_mods() & pygame.KMOD_CTRL) or pygame.key.get_pressed()[pygame.K_s]
             pressing_shift = pygame.key.get_mods() & pygame.KMOD_SHIFT
             pressing_z = pygame.key.get_pressed()[pygame.K_z]
+            pressing_r = pygame.key.get_pressed()[pygame.K_r]
+            pressing_g = pygame.key.get_pressed()[pygame.K_g]
+            pressing_q = pygame.key.get_pressed()[pygame.K_q]
 
             self.sprinting = pressing_shift
             crouching = self.crouching
@@ -204,7 +247,32 @@ class Player(Sprite):
                     if crouching and not airborne:
                         speed *= 0.7
                         
-                    self.on_wall = self.move_right(speed)
+                    hits = self.move_right(speed)
+                    if hits:
+                        self.on_wall = True
+                        if len(hits) == 1:
+                                if hits[0].hca:
+                                    hit = hits[0].collision.rect
+                                else:
+                                    hit = hits[0].rect
+
+                                if self.vector_y == 0: # Bumping on 1x1 while on the floor. Vault over!
+                                    if hit.top <= self.collision.bottom - (self.collision.height / 3) and self.collision.top < hit.top and not (hanging or crouching):
+                                            play_sfx('fall', volume=0.1)
+                                            self.set_midbottom(hit.midtop)
+                                            self.crouch()
+                                            self.stand()
+                                            self.rolling = True
+                                elif self.vector_y >= 0: # Bumping on a ledge while falling. Vault over!
+                                    if hit.top <= self.collision.bottom - (self.collision.height / 3) and self.collision.top < hit.top and hit.top > self.collision.bottom - (self.collision.height / 2) and not (hanging or crouching):
+                                            play_sfx('fall', volume=0.1)
+                                            self.set_midbottom(hit.midtop)
+                                            self.crouch()
+                                            self.stand()
+                                            self.rolling = True
+                    else:
+                        self.on_wall = False
+
                     
                 self.block_right_border()
             elif pressing_left and not pressing_right:
@@ -216,18 +284,45 @@ class Player(Sprite):
                     if crouching and not airborne:
                         speed *= 0.7
                         
-                    self.on_wall = self.move_left(speed)
+                    hits = self.move_left(speed)
+                    if hits:
+                        self.on_wall = True
+                        if len(hits) == 1:
+                                if hits[0].hca:
+                                    hit = hits[0].collision.rect
+                                else:
+                                    hit = hits[0].rect
+                                    
+                                if self.vector_y == 0: # Bumping on 1x1 while on the floor. Vault over!
+                                    if hit.top <= self.collision.bottom - (self.collision.height / 3) and self.collision.top < hit.top and not (hanging or crouching):
+                                            play_sfx('fall', volume=0.1)
+                                            self.set_midbottom(hit.midtop)
+                                            self.crouch()
+                                            self.stand()
+                                            self.rolling = True
+                                elif self.vector_y >= 0: # Bumping on a ledge while falling. Vault over!
+                                    if hit.top <= self.collision.bottom - (self.collision.height / 3) and self.collision.top < hit.top and hit.top > self.collision.bottom - (self.collision.height / 2) and not (hanging or crouching):
+                                            play_sfx('fall', volume=0.1)
+                                            self.set_midbottom(hit.midtop)
+                                            self.crouch()
+                                            self.stand()
+                                            self.rolling = True
+                    else:
+                        self.on_wall = False
+
                 self.block_left_border()
             else:
                 self.vector_x = 0
                 self.step_tick_counter = 0
+                self.rolling = False
 
             if self.vector_x and not (airborne or sliding or crouching or self.on_wall):
                 self.step_tick_counter += delta.time()
                 step_tick_counter = self.step_tick_counter
                 step_delay = self.step_delay / 2 if sprinting else self.step_delay
 
-                if step_tick_counter >= step_delay:
+                if step_tick_counter >= step_delay and not hanging:
+                    play_sfx('walk-4', volume=0.7)
                     Sound_sphere(origin=self.collision.rect.center, groups=self.sound_spheres, max_radius=abs(self.vector_x/2))
                     self.step_tick_counter = 0
 
@@ -260,6 +355,8 @@ class Player(Sprite):
             else:
                 self.hanging = False
                 self.can_jump = True
+                if self.vector_y < 0 and airborne:
+                    self.vector_y += self.speed * 8 * delta.time()
             # ----------------------------------------------------------------------------------------------------------
             # CROUCH / SLIDE
 
@@ -283,10 +380,34 @@ class Player(Sprite):
                 self.affected_by_gravity = False
                 self.has_collision = False
                 self.flying = True
+                self.immortal = True
             else:
                 self.affected_by_gravity = True
                 self.has_collision = True
                 self.flying = False
+                self.immortal = False
+
+            if pressing_q:
+                if self.whistle_tick_counter >= 0.5:
+                    play_sfx('whistle', volume=0.2)
+                    Sound_sphere(origin=self.collision.rect.center, groups=self.sound_spheres, max_radius=200)
+                    self.whistle_tick_counter = 0
+            else:
+                self.whistle_tick_counter += 1 * delta.time()
+                if self.whistle_tick_counter >= 0.5:
+                    self.whistle_tick_counter = 0.5
+
+            if pressing_r:
+                self.affected_by_gravity = False
+                from data.game import stage_restart
+                stage_restart()
+
+            if pressing_g:
+                self.affected_by_gravity = False
+                from data.game import game_over
+                game_over()
+
+
         else:
             if self.t_right:
                 self.block_right_border()

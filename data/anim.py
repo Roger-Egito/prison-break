@@ -43,6 +43,7 @@ class Anim:
         self.hc_walk = []
         self.h_fall = []
         self.h_jump = []
+        self.roll = []
 
         self.frame = 0
         self.loop = loop
@@ -108,6 +109,12 @@ class Anim:
 
         return image
 
+    def animation_is_over(self, sheet, first_frame=0, last_frame=0):
+        last_frame = len(sheet) - 1 if last_frame == 0 else last_frame
+        if self.frame + first_frame > last_frame:
+            return True
+        else:
+            return False
 
 
     #def __add__(self, sheet, external_sheet):

@@ -2,14 +2,15 @@ import random
 
 import pygame
 from data.config import render, delta
-from data.stage import *
+from data.stage import stage
+from data.group import Group
 from data.anim import Anim
 from data.collision import Collision
 from data.audio import *
 from data.hearing import *
 import copy
 
-class Sprite:
+class Sprite(pygame.sprite.Sprite):
     class States:                           # H = Hanging / C = Crouching / S = Standing (idle) / J = Jumping
         IDLE = 'IDLE'
         HANGING = 'HANGING'
@@ -22,12 +23,16 @@ class Sprite:
         JUMPING = 'JUMPING'
         S_JUMPING = 'S_JUMPING'
         H_JUMPING = 'H_JUMPING'
+        FAST_JUMPING = 'FAST_JUMPING'
         FALLING = 'FALLING'
         C_FALLING = 'C_FALLING'
         H_FALLING = 'H_FALLING'
         HJ_FALLING = 'HJ_FALLING'
         F_BACKFLIP = 'F_BACKFLIP'
+        ROLLING = 'ROLLING'
 
+    class AIs:
+        SOLDIER = 'SOLDIER'
 
 
     def __init__(
@@ -35,10 +40,12 @@ class Sprite:
             img='',
             sheet=True,
             has_alpha=True,
+            name='',
             x=0,
             y=0,
             size_mult=1.5,
             speed=125,
+            speed_mult=1,
             flipped=False,
             sheet_sprite_dimensions=(0, 0, 48, 48),
             sheet_image_count=4,
@@ -50,8 +57,12 @@ class Sprite:
             #jump_height=4.75,
             jump_height=5.00,
             affected_by_gravity=True,
-            has_collision=True):
+            has_collision=True,
+            multiple_idles=False,
+            light_radius=5,
+            groups=[]):
 
+        super().__init__(groups)
         self.img = pygame.image.load(img).convert_alpha() if has_alpha else pygame.image.load(img).convert()
         self.anim = Anim()
 
@@ -60,6 +71,7 @@ class Sprite:
             self.img = self.anim.idle[0]
 
         self.has_alpha = has_alpha
+        self.name = name
         self.x = x
         self.y = y
         self.default_x = x
@@ -68,9 +80,11 @@ class Sprite:
         self.flipped = flipped
         self.rect = pygame.Rect(x, y, self.width, self.height)
         self.collision = Collision(x=self.rect.x + collision_offset[0], y=self.rect.y + collision_offset[1], size_mult=size_mult, flipped=flipped, offset=collision_offset, dimensions=collision_dimensions, anchor=self.rect)
+        self.vision = Collision(anchor=self.collision.rect, x=self.collision.rect.x, y=self.collision.rect.y, offset=(self.width / 3, self.height / 2), size_mult=self.size_mult, flipped=self.flipped, dimensions=(self.collision.rect.width + 96, self.collision.rect.height - 16))
         self.change_size(size_mult)
 
         self.speed = speed
+        self.speed_mult = speed_mult
         self.vector_x = 0
         self.vector_y = 0
         self.x_speed_limit = 300
@@ -86,8 +100,10 @@ class Sprite:
         self.swimming = False
         self.flying = False
         self.hanging = False
+        self.rolling = False
         self.on_wall = False
         self.cramped = False
+        self.immortal = False
         self.jump_height = jump_height
         self.jump_mult = jump_mult
         self.affected_by_gravity = affected_by_gravity
@@ -98,13 +114,18 @@ class Sprite:
         self.stored_state = self.States.IDLE
         self.state_change_counter = 0
 
+        self.multiple_idles = multiple_idles
         self.idle_tick_counter = 0
         self.idle_delay = 10
 
-        self.sound_spheres = pygame.sprite.Group()
+        self.sound_spheres = Group()
 
         self.step_tick_counter = 0
-        self.step_delay = 0.4
+        self.step_delay = 0.5
+
+        self.light_radius = light_radius
+
+        self.hca = True        # Has Collision Attribute
 
     # ---
 
@@ -117,6 +138,11 @@ class Sprite:
     def default_coords(self):
         coords = (self.default_x, self.default_y)
         return coords
+
+    def set_coords(self, coords):
+        self.x = coords[0]
+        self.y = coords[1]
+        self.update_rect_position()
 
     # ---
 
@@ -199,6 +225,26 @@ class Sprite:
         self.y = (position - self.height) + (self.rect.bottom - self.collision.bottom)
         self.update_rect_y()
 
+    def set_bottomleft(self, coords):
+        self.x = coords[0] - (self.collision.left - self.rect.left)
+        self.y = (coords[1] - self.height) + (self.rect.bottom - self.collision.bottom)
+        self.update_rect_position()
+
+    def set_midbottom(self, coords):
+        self.x = coords[0] - round(self.width / 2)
+        self.y = (coords[1] - self.height) + (self.rect.bottom - self.collision.bottom)
+        self.update_rect_position()
+
+    def set_bottomright(self, coords):
+        self.x = (coords[0] - self.width) + (self.rect.right - self.collision.right)
+        self.y = (coords[1] - self.height) + (self.rect.bottom - self.collision.bottom)
+        self.update_rect_position()
+
+    def set_midtop(self, coords):
+        self.x = coords[0] - round(self.width / 2)
+        self.y = coords[1] - (self.collision.top - self.rect.top)
+        self.update_rect_position()
+
 # ---
 
     def horizontal_flip(self):
@@ -227,6 +273,7 @@ class Sprite:
 
     def rotate(self, angle):
         self.img = pygame.transform.rotate(self.img, angle)
+        #self.img = pygame.transform.rotozoom(self.img, angle, 1)
         new_rect = self.img.get_rect()
         new_rect.x = self.rect.x
         new_rect.y = self.rect.y
@@ -248,6 +295,16 @@ class Sprite:
 
 # ---
 
+    def force_move(self, hor_speed=0, ver_speed=0):
+        if hor_speed:
+            self.x += hor_speed * delta.time()
+            #self.rect.x += hor_speed * delta.time()
+        if ver_speed:
+            self.y += ver_speed * delta.time()
+            #self.rect.y += ver_speed * delta.time()
+        self.update_rect_position()
+
+
     def move(self, hor_speed=0, ver_speed=0, flippable=True):
 
         if flippable and hor_speed < 0 and self.flipped is False:
@@ -262,17 +319,17 @@ class Sprite:
             self.collision.flipped = False
 
         if hor_speed:
-            self.vector_x = hor_speed
+            self.vector_x = hor_speed * self.speed_mult
             self.x += self.vxdt
 
             self.update_rect_position()
 
             if hor_speed > 0:
                 self.last_x_direction = 1
-                return self.check_collision_right(stage.tile_group)
+                return self.check_collision_right(stage.collision_group)
             else:
                 self.last_x_direction = -1
-                return self.check_collision_left(stage.tile_group)
+                return self.check_collision_left(stage.collision_group)
 
         if ver_speed:
             self.vector_y += ver_speed  # VECTORS SHOULD NOT HAVE DELTA.TIME! THEY PERSIST BETWEEN FRAMES
@@ -284,10 +341,10 @@ class Sprite:
             self.update_rect_position()
             if self.vector_y > 0:
                 self.last_y_direction = 1
-                return self.check_collision_down(stage.tile_group)
+                return self.check_collision_down(stage.collision_group)
             else:
                 self.last_y_direction = -1
-                return self.check_collision_up(stage.tile_group)
+                return self.check_collision_up(stage.collision_group)
 
     def move_left(self, dist=0):
         if dist:
@@ -339,7 +396,7 @@ class Sprite:
             if self.bottom > oob_floor:
                 self.airborne = False
                 self.vector_y = 0
-                self.set_bottom(96)
+                self.set_bottom(160)
 
 # ---
 
@@ -450,6 +507,16 @@ class Sprite:
         self.collision.flipped = self.flipped
         self.collision.update_position()
 
+    def update_vision(self):
+        if self.size_mult != self.vision.size_mult:
+            self.vision.size_mult = self.size_mult
+            self.vision.update_offset()
+            self.vision.update_size()
+
+        self.vision.anchor = self.rect
+        self.vision.flipped = self.flipped
+        self.vision.update_position()
+
     def update_collision_position(self):
         self.collision.update_position()
 
@@ -473,25 +540,54 @@ class Sprite:
 #                    self.set_left(tile.right)
 #                    self.vector_x = 0
 
-    def check_collision_right(self, tiles):
+    def check_collision_right(self, tiles, *args):
         if self.has_collision:
             self.collision.rect.x += 1
             collisions = self.collision.get_hits(tiles)
+            if self in collisions:
+                collisions.remove(self)
             self.collision.rect.x -= 1
             for tile in collisions:
-                self.set_right(tile.left)
+                if tile.hca:
+                    self.set_right(tile.collision.rect.left)
+                else:
+                    self.set_right(tile.rect.left)
                 self.vector_x = 0
-            return collisions if len(collisions) else False
+            return collisions
 
-    def check_collision_left(self, tiles):
+    def check_collision_bottomright(self, tiles):
+        if self.has_collision:
+            self.collision.rect.x += 1
+            self.collision.rect.y += 1
+            collisions = self.collision.get_hits(tiles, coords=self.collision.rect.bottomright, point_based=True)
+            self.collision.rect.x -= 1
+            self.collision.rect.y -= 1
+            return collisions
+
+    def check_collision_bottomleft(self, tiles):
+        if self.has_collision:
+            self.collision.rect.x -= 1
+            self.collision.rect.y += 1
+            collisions = self.collision.get_hits(tiles, coords=self.collision.rect.bottomleft, point_based=True)
+            self.collision.rect.x += 1
+            self.collision.rect.y -= 1
+            return collisions
+
+
+    def check_collision_left(self, tiles=None, sprites=None):
         if self.has_collision:
             self.collision.rect.x -= 1
             collisions = self.collision.get_hits(tiles)
+            if self in collisions:
+                collisions.remove(self)
             self.collision.rect.x += 1
             for tile in collisions:
-                self.set_left(tile.right)
+                if tile.hca:
+                    self.set_left(tile.collision.rect.right)
+                else:
+                    self.set_left(tile.rect.right)
                 self.vector_x = 0
-            return collisions if len(collisions) else False
+            return collisions
 
     def check_collision_down(self, tiles):
         if self.has_collision:
@@ -500,18 +596,24 @@ class Sprite:
             collisions = self.collision.get_hits(tiles)
             self.collision.rect.y -= 1
             if collisions:
-                if self.vector_y >= 250:
+                if self.vector_y >= 150:
                     if not self.crouching:
                         if self.vector_y >= 450:
-                                self.crash_fx()
+                            self.crash_fx()
+                        else:
+                            play_sfx('fall', volume=self.vector_y/1800)
                         Sound_sphere(origin=self.collision.rect.midbottom, groups=self.sound_spheres,
                                  max_radius=abs(self.vector_y/3))
                     else:
+                        play_sfx('fall', volume=self.vector_y/3600)
                         Sound_sphere(origin=self.collision.rect.midbottom, groups=self.sound_spheres,
                                  max_radius=abs(self.vector_y/6))
             for tile in collisions:
                     self.airborne = False
-                    self.set_bottom(tile.top)
+                    if tile.hca:
+                        self.set_bottom(tile.collision.rect.top)
+                    else:
+                        self.set_bottom(tile.rect.top)
                     self.vector_y = 0
             return collisions if len(collisions) else False
 
@@ -523,9 +625,18 @@ class Sprite:
             collisions = self.collision.get_hits(tiles)
             self.collision.rect.y += 1
             for tile in collisions:
-                self.set_top(tile.bottom)
+                if tile.hca:
+                    self.set_top(tile.collision.rect.bottom)
+                else:
+                    self.set_top(tile.rect.bottom)
                 self.vector_y = 0
             return collisions if len(collisions) else False
+
+    def check_collision_point(self, coords):
+        return self.collision.is_hitting_point(coords)
+
+    def check_collision_sprite(self, sprite):
+        return self.collision.is_hitting_sprite(sprite)
 
 #    def check_collision(self, tiles):
 #        sprite = self.collision.rect
@@ -564,45 +675,46 @@ class Sprite:
     def animate(self):
             match self.state:
                 case 'IDLE':
-                    #if self.anim.last_sheet != self.anim.random_idle:
-                    #    self.idle_tick_counter = 0
-                    #    self.anim.random_idle = []
-                    #    self.change_image(self.anim.next(self.anim.idle))
-                    if self.anim.last_sheet != self.anim.idle and self.anim.last_sheet != self.anim.random_idle:
-                        self.idle_tick_counter = 0
-
-                    if self.anim.last_sheet == self.anim.idle:
-                        self.idle_tick_counter += delta.time()
-
-                        if self.idle_tick_counter >= self.idle_delay:
-                            self.anim.random_idle = random.choice([self.anim.idle2, self.anim.idle3, self.anim.idle4, self.anim.idle5])
-                            #self.anim.random_idle = self.anim.idle6
-                            self.change_image(self.anim.next(self.anim.random_idle, loop=False, speed_mult=0.25))
+                    if self.multiple_idles:
+                        if self.anim.last_sheet != self.anim.idle and self.anim.last_sheet != self.anim.random_idle:
                             self.idle_tick_counter = 0
 
-                    if self.anim.last_sheet:
-                        if self.anim.last_sheet == self.anim.random_idle:
-                            if self.idle_tick_counter < 1:
-                                self.change_image(self.anim.next(self.anim.random_idle, loop=False, speed_mult=1))
+                        if self.anim.last_sheet == self.anim.idle:
+                            self.idle_tick_counter += delta.time()
 
-                            if len(self.anim.random_idle) - 1 == self.anim.frame:
-                                if self.anim.random_idle == self.anim.idle5:
+                            if self.idle_tick_counter >= self.idle_delay:
+                                self.anim.random_idle = random.choice([self.anim.idle2, self.anim.idle3, self.anim.idle4, self.anim.idle5])
+                                #self.anim.random_idle = self.anim.idle6
+                                self.change_image(self.anim.next(self.anim.random_idle, loop=False, speed_mult=0.25))
+                                self.idle_tick_counter = 0
+
+                        if self.anim.last_sheet:
+                            if self.anim.last_sheet == self.anim.random_idle:
+                                if self.idle_tick_counter < 1:
                                     self.change_image(self.anim.next(self.anim.random_idle, loop=False, speed_mult=1))
-                                    self.idle_tick_counter -= 0.9 * delta.time()
 
-                                self.idle_tick_counter += delta.time()
+                                if len(self.anim.random_idle) - 1 == self.anim.frame:
+                                    if self.anim.random_idle == self.anim.idle5:
+                                        self.change_image(self.anim.next(self.anim.random_idle, loop=False, speed_mult=1))
+                                        self.idle_tick_counter -= 0.9 * delta.time()
 
-                                if self.idle_tick_counter >= 0.25:
-                                    self.change_image(self.anim.next(self.anim.idle))
-                                    self.idle_tick_counter = 0
+                                    self.idle_tick_counter += delta.time()
 
-                        else:
-                            self.change_image(self.anim.next(self.anim.idle))
+                                    if self.idle_tick_counter >= 0.25:
+                                        self.change_image(self.anim.next(self.anim.idle))
+                                        self.idle_tick_counter = 0
+
+                            else:
+                                self.change_image(self.anim.next(self.anim.idle))
+                    else:
+                        self.change_image(self.anim.next(self.anim.idle))
 
                 case 'WALKING':
                     self.change_image(self.anim.next(self.anim.walk))
                 case 'JUMPING' | 'FALLING':
                     self.change_image(self.anim.next(self.anim.jump))
+                case 'FAST_JUMPING':
+                    self.change_image(self.anim.next(self.anim.jump, speed_mult=3))
                 case 'S_JUMPING':
                     self.change_image(self.anim.next(self.anim.s_jump, first_frame=1, last_frame=2, loop=False, step=-1))
                 case 'C_FALLING':
@@ -652,14 +764,17 @@ class Sprite:
                     else:
                         self.change_image(
                             self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1, speed_mult=3))
+                case 'ROLLING':
+                    self.change_image(self.anim.next(self.anim.roll, last_frame=4, loop=False, speed_mult=3))
+
 
             #self.anim_tick_counter = 0
 
     def slide_fx(self):
-        play_sfx('assets/audio/sfx/slide.ogg')
+        play_sfx('slide', extension='ogg')
 
     def crash_fx(self):
-        play_sfx('assets/audio/sfx/deep_hit.mp3')
+        play_sfx('deep_hit')
 
 
 # ---

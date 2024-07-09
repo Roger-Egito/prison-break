@@ -1,24 +1,54 @@
 import math
+import json
 
 from data.tile import *
 from data.img import Background
 from data.config import window
+from data.group import *
+from data.audio import *
 from pytmx.util_pygame import *
 
+def is_obj_hor_flipped(obj):
+    return is_last_bin_digit_one(bin(obj.gid))
 
+def is_last_bin_digit_one(binary):
+    if int(binary[-1]):
+        return True
+    else:
+        return False
 
 class stage:
     path = 'assets/maps/tmx/'
     extension = '.tmx'
     name = ''
     last = ''
-    tile_group = pygame.sprite.Group()
-    tile_group_lighted = pygame.sprite.Group()
-    decor_group = pygame.sprite.Group()
-    foreground_group = pygame.sprite.Group()
-    background_group = pygame.sprite.Group()
-    x = 0
-    y = 0
+    coords = None
+    default_coords = None
+    min_coords = (0, 0)
+    max_coords = (0, 0)
+
+    player_starting_coords = (0, 0)
+    player_starting_flipped = False
+
+  # collision_offset=[2.5, 14], collision_dimensions=(20, 34))
+    tile_group = Group()
+    darkness_group = Group()
+    light_group = Group()
+    lightsource_group = Group()
+    decor_group = Group()
+    foreground_group = Group()
+    background_group = Group()
+    enemy_group = Group()
+    sound_group = Group()
+    #x = 0
+    #y = 0
+    offset_x = 0
+    offset_y = 0
+
+    in_transition = False
+    transition_speed = 0
+    transition_default_speed = 1600
+    transition_direction = (0,0)
 
     # CLOUDS
     cloud_7_folder = 'assets/Background/clouds/Clouds 7/'
@@ -38,198 +68,280 @@ class stage:
     #background_6 = Background(snowy_folder+'Snow.png')
     #background_7 = Background('tiled_exports/caua.png')
 
-    foreground = Background('assets/Background/overlays/11.png')
+    overlay = Background('assets/Background/overlays/6.png')
+    overlay.img.fill((255, 255, 255, 60), None, pygame.BLEND_RGBA_MULT)
 
     @classmethod
-    def clear(cls):
-        cls.tile_group = pygame.sprite.Group()
-        cls.decor_group = pygame.sprite.Group()
-        cls.foreground_group = pygame.sprite.Group()
-        cls.background_group = pygame.sprite.Group()
+    def get_pos(cls):
+        pos = str(cls.coords[0]) + '-' + str(cls.coords[1])
+        return pos
 
     @classmethod
-    def remove_out_of_bounds_tiles(cls, window):
-        removedTiles = 0
-        tiles = cls.tile_group.sprites()
-        decors = cls.decor_group.sprites()
-        foreground = cls.foreground_group.sprites()
-        background = cls.background_group.sprites()
-
-        for tile in tiles:
-            if tile.rect.x < 0:
-                cls.tile_group.remove(tile)
-                removedTiles += 1
-            elif tile.rect.x > window.width:
-                cls.tile_group.remove(tile)
-                removedTiles += 1
-            elif tile.rect.y < 0:
-                cls.tile_group.remove(tile)
-                removedTiles += 1
-            elif tile.rect.y > window.height:
-                cls.tile_group.remove(tile)
-                removedTiles += 1
-
-        for back in background:
-            if back.rect.x < 0:
-                cls.background_group.remove(back)
-                removedTiles += 1
-            elif back.rect.x > window.width:
-                cls.background_group.remove(back)
-                removedTiles += 1
-            elif back.rect.y < 0:
-                cls.background_group.remove(back)
-                removedTiles += 1
-            elif back.rect.y > window.height:
-                cls.background_group.remove(back)
-                removedTiles += 1
-
-        for fore in foreground:
-            if fore.rect.x < 0:
-                cls.foreground_group.remove(fore)
-                removedTiles += 1
-            elif fore.rect.x > window.width:
-                cls.foreground_group.remove(fore)
-                removedTiles += 1
-            elif fore.rect.y < 0:
-                cls.foreground_group.remove(fore)
-                removedTiles += 1
-            elif fore.rect.y > window.height:
-                cls.foreground_group.remove(fore)
-                removedTiles += 1
-
-        for decor in decors:
-            if decor.rect.x < 0:
-                cls.decor_group.remove(decor)
-                removedTiles += 1
-            elif decor.rect.x > window.width:
-                cls.decor_group.remove(decor)
-                removedTiles += 1
-            elif decor.rect.y < 0:
-                cls.decor_group.remove(decor)
-                removedTiles += 1
-            elif decor.rect.y > window.height:
-                cls.decor_group.remove(decor)
-                removedTiles += 1
-        print(removedTiles)
-
-
-
+    def get_data_file(cls):
+        data_file = cls.path + cls.get_pos() + cls.extension
+        return data_file
 
     @classmethod
-    def set_name(cls, filepath):
+    def get_data(cls):
+        data = load_pygame(cls.get_data_file())
+        return data
+
+    @classmethod
+    def render_billboard(cls, object, text, text_size=24, text_color='white', box_color='black', box=True):
+        text = pygame.font.Font(None, text_size).render(text, 1, text_color)
+        rect = text.get_rect()
+        setattr(rect, "midbottom", (object.centerx, object.y - 10))  # (window.width - 16, 32))
+        if box:
+            pygame.draw.rect(window.display, box_color, (rect[0] - 5, rect[1] - 5, rect[2] + 10, rect[3] + 10))
+        render(text, rect)
+
+    @classmethod
+    def change(cls, hor=0, ver=0, instant=False, coords=None, player=None, speed=0, overwrite_player_direction=False):
+
+        if coords:
+            if cls.coords is None:
+                cls.default_coords = list(coords)
+            cls.coords = list(coords)
+
+        if instant:
+            cls.load(player, overwrite_player_direction=overwrite_player_direction)
+        else:
+            cls.start_transition(hor=hor, ver=ver, speed=speed, player=player)
+
+        cls.set_name()
+
+    @classmethod
+    def clear(cls, player):
+        cls.tile_group = Group()
+        cls.decor_group = Group()
+        cls.foreground_group = Group()
+        cls.background_group = Group()
+        cls.darkness_group = Group()
+        cls.light_group = Group()
+        cls.lightsource_group = Group()
+        cls.enemy_group = Group()
+        cls.collision_group = Group()
+        cls.lightsource_group.add(player)
+
+    @classmethod
+    def set_name(cls):
         cls.last = cls.name
+        filepath = cls.get_data_file()
         cls.name = filepath[len(cls.path):-len(cls.extension)]
 
     @classmethod
-    def load(cls, filepath):
-        #TODO: Check pygame's sprite.LayeredUpdates
+    def load(cls, player=None, overwrite_player_direction=False):
+        play_music('safe')
+        cls.clear(player)
+        data = cls.get_data()
 
-        cls.clear()
-        file = load_pygame(filepath)
+        cls.player_starting_coords = player.coords
+        if overwrite_player_direction:
+            player.flipped = cls.player_starting_flipped
+        else:
+            cls.player_starting_flipped = player.flipped
 
         try:
-            for x, y, image in file.get_layer_by_name('Tiles').tiles():
+            for x, y, image in data.get_layer_by_name('Tiles').tiles():
                 coords = (x * 32, y * 32)
-                Tile(coords=coords, image=image, groups=cls.tile_group)
+                Tile(coords=coords, image=image, groups=(cls.tile_group, cls.collision_group))
         except:
             pass
 
         try:
-            for x, y, image in file.get_layer_by_name('Decor').tiles():
+            for x, y, image in data.get_layer_by_name('Decor').tiles():
                 coords = (x * 32, y * 32)
                 Tile(coords=coords, image=image, groups=cls.decor_group)
         except:
             pass
 
+        #TODO: Transform Foreground tile images into images with alpha, even when 100% opaque
         try:
-            for x, y, image in file.get_layer_by_name('Foreground').tiles():
+            for x, y, image in data.get_layer_by_name('Foreground').tiles():
                 coords = (x * 32, y * 32)
                 Tile(coords=coords, image=image, groups=cls.foreground_group)
         except:
             pass
 
         try:
-            for x, y, image in file.get_layer_by_name('Background').tiles():
+            for x, y, image in data.get_layer_by_name('Background').tiles():
                 coords = (x * 32, y * 32)
+                image.fill((250, 250, 250, 255), None, pygame.BLEND_RGBA_MULT)
+                #s = pygame.Surface((image.rect.width, image.rect.height))
+                #s.set_alpha(200)
+                #s.fill((0, 0, 30))
                 Tile(coords=coords, image=image, groups=cls.background_group)
+
+        except:
+            pass
+
+
+
+        try:
+            for x, y, image in data.get_layer_by_name('Lights').tiles():
+                coords = (x * 32, y * 32)
+                Tile(coords=coords, image=image, groups=(cls.light_group, cls.lightsource_group))
+        except:
+            pass
+
+        try:
+            for x, y, image in data.get_layer_by_name('Background').tiles():
+                coords = (x * 32, y * 32)
+                Tile(coords=coords, image=image, groups=cls.darkness_group)
+        except:
+            pass
+
+        try:
+            from data.enemy import Enemy
+            for enemy in data.get_layer_by_name('Enemies'):
+                match enemy.type:
+                    case 'Soldier':
+                        flipped = is_obj_hor_flipped(enemy)
+                        direction = -1 if flipped else 1
+                        Enemy(img='assets/Characters/Enemy 2/Idle.png', name=enemy.name, type=enemy.type, x=enemy.x, y=enemy.y-enemy.height+64,
+                                sheet_sprite_dimensions=(0, 0, enemy.width, enemy.height), speed_mult=0.5, size_mult=1.33,
+                                collision_offset=[12, 48], collision_dimensions=(30, 48), ai='SOLDIER',
+                                hor_dir=direction, flipped=flipped, light_radius=6, groups=(cls.enemy_group, cls.lightsource_group))  # collision_offset=[2.5, 14], collision_dimensions=(20, 34))
         except:
             pass
 
     @classmethod
-    def transition(cls, filepath, left = False):
-        file = load_pygame(filepath)
-        if not left:
-            for x, y, image in file.get_layer_by_name('Tiles').tiles():
-                coords = (x * 32 + window.width, y * 32)
-                Tile(coords=coords, image=image, groups=cls.tile_group)
+    def start_transition(cls, hor=0, ver=0, speed=0, player=None):
+        data = cls.get_data()
+        cls.in_transition = True
+        cls.transition_speed = speed if speed else cls.transition_default_speed
+        cls.transition_direction = (hor, ver)
 
-            try:
-                for x, y, image in file.get_layer_by_name('Decor').tiles():
-                    coords = (x * 32 + window.width, y * 32)
-                    Tile(coords=coords, image=image, groups=cls.decor_group)
-            except ValueError:
-                print('huh')
-            try:
-                for x, y, image in file.get_layer_by_name('Foreground').tiles():
-                    coords = (x * 32 + window.width, y * 32)
-                    Tile(coords=coords, image=image, groups=cls.foreground_group)
-            except:
-                print("No foreground")
+        try:
+            for x, y, image in data.get_layer_by_name('Tiles').tiles():
+                coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
+                Tile(coords=coords, image=image, groups=(cls.tile_group, cls.collision_group))
+        except:
+            print('No Tiles')
 
-            try:
-                for x, y, image in file.get_layer_by_name('Background').tiles():
-                    coords = (x * 32 + window.width, y * 32)
-                    Tile(coords=coords, image=image, groups=cls.background_group)
-            except:
-                print("No background")
-        else:
-            for x, y, image in file.get_layer_by_name('Tiles').tiles():
-                coords = (x * 32 - window.width, y * 32)
-                Tile(coords=coords, image=image, groups=cls.tile_group)
+        try:
+            for x, y, image in data.get_layer_by_name('Decor').tiles():
+                coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
+                Tile(coords=coords, image=image, groups=cls.decor_group)
+        except:
+            print('No Decor')
 
-            try:
-                for x, y, image in file.get_layer_by_name('Decor').tiles():
-                    coords = (x * 32 - window.width, y * 32)
-                    Tile(coords=coords, image=image, groups=cls.decor_group)
-            except ValueError:
-                print('huh')
-            try:
-                for x, y, image in file.get_layer_by_name('Foreground').tiles():
-                    coords = (x * 32 - window.width, y * 32)
-                    Tile(coords=coords, image=image, groups=cls.foreground_group)
-            except:
-                print("No foreground")
+        try:
+            for x, y, image in data.get_layer_by_name('Foreground').tiles():
+                coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
+                Tile(coords=coords, image=image, groups=cls.foreground_group)
+        except:
+            print("No Foreground")
 
-            try:
-                for x, y, image in file.get_layer_by_name('Background').tiles():
-                    coords = (x * 32 - window.width, y * 32)
-                    Tile(coords=coords, image=image, groups=cls.background_group)
-            except:
-                print("No background")
+        try:
+            for x, y, image in data.get_layer_by_name('Background').tiles():
+                coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
+                image.fill((250, 250, 250, 255), None, pygame.BLEND_RGBA_MULT)
+                Tile(coords=coords, image=image, groups=cls.background_group)
+        except:
+            print("No Background")
+
+        try:
+            for x, y, image in data.get_layer_by_name('Lights').tiles():
+                coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
+                Tile(coords=coords, image=image, groups=(cls.light_group, cls.lightsource_group))
+        except:
+            print("No Lights")
+
+        try:
+            for x, y, image in data.get_layer_by_name('Background').tiles():
+                coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
+                Tile(coords=coords, image=image, groups=cls.darkness_group)
+        except:
+            print("Please insert background!")
+
+        try:
+            from data.enemy import Enemy
+            for enemy in data.get_layer_by_name('Enemies'):
+                match enemy.type:
+                    case 'Soldier':
+                        flipped = is_obj_hor_flipped(enemy)
+                        direction = -1 if flipped else 1
+                        Enemy(img='assets/Characters/Enemy 2/Idle.png', x=enemy.x + window.width * hor, y=enemy.y-enemy.height+64 + window.height * ver,
+                                sheet_sprite_dimensions=(0, 0, enemy.width, enemy.height), speed_mult=0.5, size_mult=1.33,
+                                collision_offset=[12, 48], collision_dimensions=(30, 48), ai='SOLDIER',
+                                hor_dir=direction, flipped=flipped, light_radius=6, groups=(cls.enemy_group, cls.lightsource_group))  # collision_offset=[2.5, 14], collision_dimensions=(20, 34))
+        except:
+            pass
 
     @classmethod
-    def move(cls, left_to_right = False, player = None, movePlayer = True):
-        if left_to_right:
-            step = 20
+    def update(cls, player):
+        if cls.in_transition:
+            hor = cls.transition_direction[0]
+            ver = cls.transition_direction[1]
+            speed = cls.transition_speed
+
+            cls.move(hor=-hor, ver=-ver, speed=speed, player=player)
+
+            if abs(cls.offset_x) >= window.width:
+                cls.end_transition(player)
+
+    @classmethod
+    def end_transition(cls, player):
+        cls.transition_speed = 0
+        cls.transition_direction = (0,0)
+        cls.offset_x = 0
+        cls.load(player)
+        cls.in_transition = False
+
+    @classmethod
+    def move(cls, hor=0, ver=0, speed=0, player=None, movePlayer=True):
+        cls.tile_group.move(hor=hor, ver=ver, speed=speed)
+        cls.light_group.move(hor=hor, ver=ver, speed=speed)
+        cls.decor_group.move(hor=hor, ver=ver, speed=speed)
+        cls.foreground_group.move(hor=hor, ver=ver, speed=speed)
+        cls.background_group.move(hor=hor, ver=ver, speed=speed)
+        cls.enemy_group.force_move(hor=hor, ver=ver, speed=speed)
+        if player and movePlayer:
+            player.force_move(hor_speed=hor*speed*0.95, ver_speed=ver*speed*0.95)
+        cls.offset_x += hor * speed * delta.time()
+        cls.offset_y += ver * speed * delta.time()
+
+    @classmethod
+    def transition_right(cls, player):
+        if cls.coords[0] == cls.max_coords[0]:
+            cls.coords[0] = cls.min_coords[0]
         else:
-            step = -20
-        cls.tile_group.update(method=1, step=step)
-        cls.decor_group.update(method=1, step=step)
-        cls.foreground_group.update(method=1, step=step)
-        cls.background_group.update(method=1, step=step)
-        cls.x -= int(step)
-        if player is not None and movePlayer:
-            player.x += int(step)
-        print(player.x, ' ', step)
-        return abs(cls.x)
+            cls.coords[0] += 1
+        cls.change(player=player, hor=1)
+
+    @classmethod
+    def transition_left(cls, player):
+        if cls.coords[0] == cls.min_coords[0]:
+            cls.coords[0] = cls.max_coords[0]
+        else:
+            cls.coords[0] -= 1
+        cls.change(player=player, hor=-1)
+
+    @classmethod
+    def transition_up(cls, player):
+        if cls.coords[1] == cls.min_coords[1]:
+            cls.coords[1] = cls.max_coords[1]
+        else:
+            cls.coords[1] -= 1
+        cls.change(player=player, ver=1)
+
+    @classmethod
+    def transition_down(cls, player):
+        if cls.coords[1] == cls.max_coords[1]:
+            cls.coords[1] = cls.min_coords[1]
+        else:
+            cls.coords[1] += 1
+        cls.change(player=player, ver=-1)
 
     @classmethod
     def background_render(cls, player):
+
         # CLOUDS
-        cls.background_1.render()
-        cls.background_2.render()
-        cls.background_3.render_horizontal_scrolling(speed_mult=0.3)
-        cls.background_4.render_horizontal_scrolling(speed_mult=0.6)
+        #cls.background_1.render()
+        #cls.background_2.render()
+        #cls.background_3.render_horizontal_scrolling(speed_mult=0.3)
+        #cls.background_4.render_horizontal_scrolling(speed_mult=0.6)
         #background_5.render()
 
         # SNOWY
@@ -243,38 +355,55 @@ class stage:
 
         # ---
 
-        cls.decor_group.draw(window.display)
-        cls.background_group.draw(window.display)
-        
+        cls.background_group.render()
+        cls.light_group.render()
+
+        #pygame.draw.rect(window.display, 'pink', (player.rect))
+        #for i in cls.enemy_group:
+        #    pygame.draw.rect(window.display, 'pink', i.vision.rect)
+        #pygame.draw.rect(window.display, 'green' if not player.crouching else 'blue', (player.collision.rect))
+
         if player is not None:
             player.render()
+            cls.enemy_group.render()
         else:
             print("aaahh, sumiu")
-            
-        cls.tile_group.draw(window.display)
-        cls.foreground_group.draw(window.display)
 
-    # This version will make EVERY tile have collision. You can uncomment the code below to put the layers you want to
-    # not have collision inside decor_group
-    #for layer in file.layers:
-    #    if isinstance(layer, pytmx.TiledTileLayer):                 # Alternative: if hasattr(layer, 'data'):
-    #       for x, y, image in layer.tiles():
-    #           coords = (x * 32, y * 32)
-    #           Tile(coords=coords, image=image, groups=tile_group)
+        cls.tile_group.render()
+        cls.decor_group.render()
+        cls.foreground_group.render()
+        cls.overlay.render()
+        for enemy in cls.enemy_group:
+            if enemy.alert:
+                cls.render_billboard(enemy.collision.rect, '!', 64, 'red', '', False)
+                enemy.light_radius = 12
+            elif enemy.checking:
+                enemy.light_radius = 6
+                cls.render_billboard(enemy.collision.rect, '?', 64, 'yellow', '', False)
+            else:
+                enemy.light_radius = 0
+        #cls.render_billboard(player.state, player.collision)
 
-    #tiles = file.get_layer_by_name('Tiles')
-    #decor = file.get_layer_by_name('Decor')
-    #foreground = file.get_layer_by_name('Foreground')
+        cls.background_group.update(cls.lightsource_group)
+        cls.decor_group.update(cls.lightsource_group, is_tile=False)
+        cls.tile_group.update(cls.lightsource_group)
+        cls.foreground_group.update(cls.lightsource_group, is_foreground=True)
+        cls.darkness_group.update(cls.lightsource_group, is_darkness=True)
+        cls.light_group.update(cls.lightsource_group, is_tile=False)
 
+        player.apply_gravity()
+        player.allow_movement()
+        player.update_collision()
+        player.state_control()
+        player.animate()
+        player.sound_spheres.update()
+        cls.enemy_group.animate()
+        cls.enemy_group.state_control()
+        cls.enemy_group.apply_gravity()
+        cls.enemy_group.update_collision()
+        cls.enemy_group.update_vision()
+        cls.enemy_group.render_spheres()
+        cls.enemy_group.ai_control(player)
 
-    #for x, y, image in file.layers[2].tiles():
-    #    coords = (x * 32, y * 32)
-    #    Tile(coords=coords, image=image, groups=foreground_group)
-#
-    #for x, y, image in file.layers[1].tiles():
-    #    coords = (x * 32, y * 32)
-    #    Tile(coords=coords, image=image, groups=tile_group)
-##
-    #for x, y, image in file.layers[0].tiles():
-    #    coords = (x * 32, y * 32)
-    #    Tile(coords=coords, image=image, groups=decor_group)
+        #for enemy in cls.enemy_group:
+        #    cls.render_billboard(enemy.collision.rect, enemy.state, 64, 'red', '', False)

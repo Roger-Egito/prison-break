@@ -28,8 +28,8 @@ class Collision:
         self.flipped = flipped
         self.default_dimensions = dimensions
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        self.l_radius = 5
-        self.light = pygame.Rect(self.x - self.l_radius - ((self.height - self.width) / 2), self.y - self.l_radius, self.height + 2*self.l_radius, self.height + 2*self.l_radius)
+        #self.l_radius = 13
+        #self.light = None
         #self.light_circle =
         self.anchor = anchor
 
@@ -103,11 +103,11 @@ class Collision:
 
         self.rect.x = round(self.x)
         self.rect.y = round(self.y)
-        self.update_light()
+        #self.update_light()
 
-    def update_light(self):
-        self.light.x = self.rect.x - self.l_radius - ((self.height - self.width) / 2)
-        self.light.y = self.rect.y - self.l_radius
+    #def update_light(self):
+    #    self.light.x = self.rect.x - self.l_radius - ((self.height - self.width) / 2)
+    #    self.light.y = self.rect.y - self.l_radius
 
     def update_x(self):
         if self.flipped:
@@ -126,13 +126,58 @@ class Collision:
         self.rect.width = round(self.width)
         self.rect.height = round(self.height)
 
-    def get_hits(self, tiles):
+#    def get_hits(self, tiles, coords=(0,0), collision_based=False, point_based=False):
+#        hit_list = []
+#        for tile in tiles:
+#            if collision_based:
+#                collision = tile.collision.rect
+#                if self.rect.colliderect(collision):
+#                    hit_list.append(collision)
+#            elif point_based:
+#                if tile.rect.collidepoint(coords):
+#                    hit_list.append(tile.rect)
+#            else:
+#                rect = tile.rect
+#                if self.rect.colliderect(rect):
+#                    hit_list.append(rect)
+#        return hit_list
+
+    def get_hits(self, tiles, coords=(0,0), collision_based=False, point_based=False):
         hit_list = []
         for tile in tiles:
-            rect = tile.rect
-            if self.rect.colliderect(rect):
-                hit_list.append(rect)
+            if point_based:
+                if tile.rect.collidepoint(coords):
+                    hit_list.append(tile.rect)
+            else:
+                if tile.hca:
+                    collision = tile.collision.rect
+                    if self.rect.colliderect(collision):
+                        hit_list.append(tile)
+                else:
+                    rect = tile.rect
+                    if self.rect.colliderect(rect):
+                        hit_list.append(tile)
+
+
         return hit_list
+
+    def is_hitting_sprite(self, sprite):
+        return self.rect.colliderect(sprite.collision.rect)
+
+    def is_hitting_point(self, coords):
+        return self.rect.collidepoint(coords)
+
+    def is_hitting_circle(self, r, center):
+        circle_distance_x = abs(center[0] - self.rect.centerx)
+        circle_distance_y = abs(center[1] - self.rect.centery)
+        if circle_distance_x > self.rect.w / 2.0 + r or circle_distance_y > self.rect.h / 2.0 + r:
+            return False
+        if circle_distance_x <= self.rect.w / 2.0 or circle_distance_y <= self.rect.h / 2.0:
+            return True
+        corner_x = circle_distance_x - self.rect.w / 2.0
+        corner_y = circle_distance_y - self.rect.h / 2.0
+        corner_distance_sq = corner_x ** 2.0 + corner_y ** 2.0
+        return corner_distance_sq <= r ** 2.0
 
     def get_line_hits(self, tiles, x, y, width, height):
         hit_list = []
