@@ -4,12 +4,12 @@
     "spawnRight": [-100,245],
     "spawnLeft": [160,160]
   },
-  "0-1": {
+  "1-0": {
     "stageGroup": "Tutorial",
     "spawnRight": [-100,25],
     "spawnLeft": [10,249]
   },
-  "0-2": {
+  "2-0": {
     "stageGroup": "Tutorial",
     "spawnRight": [-100,25],
     "spawnLeft": [10,25]

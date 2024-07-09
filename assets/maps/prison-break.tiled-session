@@ -1,0 +1,153 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "tmx/1-0.tmx",
+    "expandedProjectPaths": [
+        "tsx",
+        ".",
+        "tmx"
+    ],
+    "fileStates": {
+        "tmx/0-0.tmx": {
+            "scale": 1,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 374.5,
+                "y": 290
+            }
+        },
+        "tmx/1-0.tmx": {
+            "scale": 1,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 381.5,
+                "y": 192
+            }
+        },
+        "tmx/2-0.tmx": {
+            "scale": 1,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 368.5,
+                "y": 212
+            }
+        },
+        "tmx/2-1.tmx": {
+            "scale": 1,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 375.5,
+                "y": 202
+            }
+        },
+        "tmx/3-0.tmx": {
+            "expandedObjectLayers": [
+                8
+            ],
+            "scale": 1,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 411.5,
+                "y": 258
+            }
+        },
+        "tmx/4-0.tmx": {
+            "expandedObjectLayers": [
+                5
+            ],
+            "scale": 1,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": 445.5,
+                "y": 208
+            }
+        },
+        "tmx/4-4.tmx": {
+            "scale": 1.0889375,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 399.93112552373304,
+                "y": 224.07162945531772
+            }
+        },
+        "tmx/5-0.tmx": {
+            "scale": 1.0889375,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 412.787694426907,
+                "y": 224.07162945531772
+            }
+        },
+        "tmx/Screenshot1.tmx": {
+            "scale": 0.62225,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 400.9642426677381,
+                "y": 223.38288469264768
+            }
+        },
+        "tmx/Screenshot2.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 520,
+                "y": 356.6666666666667
+            }
+        },
+        "tmx/Testing.tmx": {
+            "scale": 1.0889375,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 399.93112552373304,
+                "y": 315.90426447798893
+            }
+        },
+        "tsx/Outside.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1
+        },
+        "tsx/Power Station.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1
+        },
+        "tsx/Soldier.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1
+        },
+        "tsx/base.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 0.5
+        },
+        "tsx/prison-break.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "last.imagePath": "C:/Users/egito/Desktop/# prison-break/prison-break/assets/tiles",
+    "map.lastUsedFormat": "tmx",
+    "openFiles": [
+        "tmx/0-0.tmx",
+        "tmx/1-0.tmx",
+        "tmx/2-0.tmx",
+        "tmx/Screenshot1.tmx",
+        "tmx/2-1.tmx"
+    ],
+    "project": "prison-break.tiled-project",
+    "recentFiles": [
+        "tmx/3-0.tmx",
+        "tmx/2-0.tmx",
+        "tmx/0-0.tmx",
+        "tmx/4-4.tmx",
+        "tmx/Testing.tmx",
+        "tmx/Screenshot1.tmx",
+        "tmx/1-0.tmx",
+        "tmx/2-1.tmx",
+        "tsx/prison-break.tsx",
+        "tmx/Screenshot2.tmx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.type": 1
+}

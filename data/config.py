@@ -29,6 +29,8 @@ class window:
     def draw(cls):
         cls.screen.blit(pygame.transform.scale(window.display, window.screen_size), (0, 0))
 
+
+
 class fps:
 
     global clock
@@ -37,7 +39,7 @@ class fps:
     def get(cls):
         return int(clock.get_fps())
 
-    max = 240                #random.randint(1, 10) * 100
+    max = 60                #random.randint(1, 10) * 100
     last_values = []
     max_samples = 5
     avg = 0
@@ -117,8 +119,8 @@ class delta:
     last_time = 0
 
     @classmethod
-    def time(cls):
-        delta_time = (cls.curr_time - cls.last_time) / 1000
+    def time(cls):          # How much time between last frame and this frame - in seconds
+        delta_time = min(0.02, (cls.curr_time - cls.last_time) / 1000)
 
         return delta_time
 
