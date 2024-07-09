@@ -8,7 +8,6 @@ from data.player import *
 import json
 from data.config import delta
 
-
 currentStageLine = 0
 currentStageColumn = 0
 
@@ -31,7 +30,10 @@ player.anim.idle2 = player.anim.populate('assets/Characters/2 Punk/Talk.png', im
 player.anim.idle3 = player.anim.populate('assets/Characters/2 Punk/Use.png', image_count=6)
 player.anim.idle4 = player.anim.populate('assets/Characters/2 Punk/Happy.png', image_count=6)
 player.anim.idle5 = player.anim.populate('assets/Characters/2 Punk/Idle2.png', image_count=4)
+
+frames = 0
 def generalRenderer(renderPlayer = True, transitioning = False):
+
     if renderPlayer:
         stage.background_render(player)
         player.apply_gravity()
@@ -61,8 +63,9 @@ def renderWindow():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit_game()
-
         generalRenderer()
+
+
 
 def load(right=False, firstCall = False):
 

@@ -207,6 +207,24 @@ class Sprite:
     def vertical_flip(self):
         self.img = pygame.transform.flip(self.img, 0, 1)
 
+    def rotate_around_center(self, angle):
+        print(f"Flippado: {self.flipped}")
+        # tentar solução de compensar a posição com a diferença de tamanho
+        wi = self.img.get_width()
+        hi = self.img.get_height()
+
+        rotimg = pygame.transform.rotate(self.img, angle)
+        diffx = rotimg.get_width() - wi
+        diffy = rotimg.get_height() - hi
+        rotimg.get_rect().x -= diffx
+        rotimg.get_rect().y -= diffy
+        self.img = rotimg
+        self.update_rect_position()
+        if not self.flipped:
+            self.rect.x -= diffx
+            self.rect.y -= diffy
+
+
     def rotate(self, angle):
         self.img = pygame.transform.rotate(self.img, angle)
         new_rect = self.img.get_rect()
@@ -623,12 +641,12 @@ class Sprite:
                         rotation = min(45, max(-45, int(-self.vector_y / 5)))
                         if not self.flipped:
                             if self.vector_y < 0:
-                                self.rotate(rotation)
+                                self.rotate_around_center(rotation)
                             else:
                                 self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1, speed_mult=3))
                         if self.flipped:
                             if self.vector_y < 0:
-                                self.rotate(-rotation)
+                                self.rotate_around_center(-rotation)
                             else:
                                 self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1, speed_mult=3))
                     else:
