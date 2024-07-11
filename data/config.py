@@ -19,8 +19,9 @@ def return_random_color():
 class window:
     width = 800
     height = 448
-    screen_size = (1607, 900) #(1920, 1080)
+    screen_size = (1600, 900) #(1920, 1080)
     srd = (screen_size[0] - width, screen_size[1] - height)  # Screen Resolution Difference
+    srdp = ()
     center_width = width / 2
     center_height = height / 2
     center = (center_width, center_height)

@@ -3,7 +3,7 @@ from data.config import window
 
 def pos():
     mouse_pos = pygame.mouse.get_pos()
-    #mouse_pos = (mouse_pos[0] - window.srd[0]/2, mouse_pos[1] - window.srd[1]/2)
+    mouse_pos = (mouse_pos[0] - window.srd[0]/2, mouse_pos[1] - window.srd[1]/2)
     return mouse_pos
 
 def update_last_pos():

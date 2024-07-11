@@ -20,7 +20,7 @@ pygame.display.set_caption('Prison Break - Escape Big Sister')
 
 if testing:
     #title.menu()
-        game.loop()
+    game.loop()
     #stage.renderWindow()
 
 else:

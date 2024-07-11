@@ -13,7 +13,7 @@ player = Player(img='assets/Characters/2 Punk/Punk_idle.png', name='Player', x=1
                 multiple_idles=True,
                 light_radius=6)
 
-stage.change(instant=True, coords=(5, 0), player=player)
+stage.change(instant=True, coords=(0, 0), player=player)
 stage.min_coords = (0, 0)
 stage.max_coords = (6, 0)
 

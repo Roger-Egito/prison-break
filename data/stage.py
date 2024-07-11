@@ -474,6 +474,7 @@ class stage:
         cls.enemy_group.ai_control(player)
 
         #for enemy in cls.enemy_group:
+        #    cls.render_billboard('AB: ' + str(enemy.airborne), enemy.collision.rect)
             #cls.render_billboard('Y: ' + str(enemy.vector_y), enemy.collision.rect, text_align="midleft", row=1)
             #cls.render_billboard('X: ' + str(enemy.vector_x), enemy.collision.rect, text_align="midleft", row=2)
         #    cls.render_billboard(str(enemy.chasing), enemy.collision.rect, row=1)
