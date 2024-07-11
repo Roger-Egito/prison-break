@@ -1,5 +1,5 @@
 from data.sprite import Sprite
-from data.config import window, calc
+from data.config import window, calc, return_random_color
 from data.stage import *
 from data.game import game_over, stage_restart
 from data.collision import *
@@ -11,10 +11,9 @@ import random
 
 class Enemy(Sprite):
 
-    def __init__(self, type=None, ai=None, hor_dir=1, *args, **kwargs):
+    def __init__(self, ai=None, hor_dir=1, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.type = type
         self.allow_movement = True
         self.ai = ai
         self.hor_dir = hor_dir
@@ -23,8 +22,10 @@ class Enemy(Sprite):
         self.point_of_interest = False
         self.chasing = False
         self.alert = False
+        self.show_sight = False
         self.waiting_tick_counter = 0
         self.step_tick_counter = 0
+        self.random_color = return_random_color()
 
         if self.type == 'Soldier':
             self.anim.walk = self.anim.populate('assets/Characters/Enemy 2/Walk.png', image_count=6, dimensions=(0, 0, 96, 96))
@@ -37,12 +38,13 @@ class Enemy(Sprite):
         st = self.state
         walking = self.vector_x != 0
         airborne = self.airborne
+        chasing = self.chasing
 
         if airborne and self.anim.jump:
             self.state = s.FAST_JUMPING
         elif walking and self.anim.walk:
             self.state = s.WALKING
-            if self.alert and self.anim.run:
+            if chasing and self.anim.run:
                 self.state = s.RUNNING
         else:
             self.state = s.IDLE
@@ -53,31 +55,61 @@ class Enemy(Sprite):
         if self.ai == AI.SOLDIER:
             if not self.airborne:
                 self.vector_y = 0
+
+            # Sight ----------------------------------------------------------------------------------------------------
+            pptop = (player.collision.rect.centerx, player.collision.rect.y+5)
+            ppbottom = (player.collision.rect.centerx, player.collision.rect.bottom-5)
+
+            line1 = ((self.collision.rect.centerx, self.collision.rect.y+10), pptop)
+            line2 = ((self.collision.rect.centerx, self.collision.rect.y+5), ppbottom)
+
+            if stage.show_enemy_sight:
+                pygame.draw.line(window.display, self.random_color, line1[0], line1[1])
+                pygame.draw.line(window.display, self.random_color, line2[0], line2[1])
+
             self.allow_movement = not stage.in_transition
+
             if pygame.Rect.colliderect(self.vision.rect, player.collision.rect):
-                if not self.chasing:
-                    self.alert = True
+                #player_distance = (player.collision.rect.centerx - self.collision.rect.centerx, player.collision.rect.y - self.collision.rect.y)
+                vision_stopped = False
+                vision_top_stopped = False
+                vision_bottom_stopped = False
+                for tile in stage.hiding_group:
+                    if not vision_top_stopped:
+                        if pygame.Rect.clipline(tile.rect, line1) or not pygame.Rect.collidepoint(self.vision.rect, pptop):
+                            vision_top_stopped = True
+                    if not vision_bottom_stopped:
+                        if pygame.Rect.clipline(tile.rect, line2) or not pygame.Rect.collidepoint(self.vision.rect, ppbottom):
+                            vision_bottom_stopped = True
+
+                    if vision_top_stopped and vision_bottom_stopped:
+                        vision_stopped = True
+                        break
+
+            # Start/End CHASING ------------------------------------------------------------------------------------
+                if not self.chasing and not vision_stopped:
+                    #self.alert = True
                     self.checking = True
                     self.chasing = True
-                    play_music('action')
-                    play_sfx('alert-3', channel=2)
-                    #play_sfx('woob')
+                    play_music('action', volume=0.5)
+                    play_sfx('alert-3', channel=2, volume=0.4)
+                elif self.chasing and vision_stopped:
+                    self.chasing = False
+                    #self.airborne = self.vector_y != 0
             else:
-                #play_music('safe')
-                self.alert = False
-                print(self.alert)
                 self.chasing = False
                 self.airborne = self.vector_y != 0
-
-            if all(not enemy.alert for enemy in stage.enemy_group):
+            if all(not enemy.chasing for enemy in stage.enemy_group):
                 play_music('safe')
 
+                # TODO: Figure out how to fix enemy ignoring 1x1 tiles when 'checking'
+
+            # Select direction of movement -----------------------------------------------------------------------------
             if self.allow_movement:
                 speed = self.speed
                 collisions = []
-                if self.alert:
-                    speed *= 5
                 if self.chasing:
+                    speed *= 5
                     collisions = self.move_hor_to(player.collision.center_x, sprinting=True)
                 elif self.checking:
                     collisions = []
@@ -90,6 +122,7 @@ class Enemy(Sprite):
                     else:
                         collisions = self.move_left(speed)
 
+            # Check for player/ledge collision -------------------------------------------------------------------------
                 player_hit = self.collision.is_hitting_sprite(player)
                 edge_hit = False
                 edge2_hit = False
@@ -101,67 +134,67 @@ class Enemy(Sprite):
                     if edge_hit:
                         self.collision.rect.x += 32
                         edge2_hit = not self.check_collision_bottomright(stage.tile_group)
-                        self.collision.rect.x -= 32
-                        reverse_edge_hit = not self.check_collision_bottomleft(stage.tile_group)
+                        self.collision.rect.x -= 64
+                        reverse_edge_hit = not self.check_collision_midbottom(stage.tile_group)
+                        self.collision.rect.x += 32
                         if edge2_hit:
                             self.collision.rect.x += 64
                             edge3_hit = not self.check_collision_bottomright(stage.tile_group)
                             self.collision.rect.x -= 64
-
                 elif self.vector_x < 0:
                     edge_hit = not self.check_collision_bottomleft(stage.tile_group)
                     if edge_hit:
                         self.collision.rect.x -= 32
                         edge2_hit = not self.check_collision_bottomleft(stage.tile_group)
-                        self.collision.rect.x += 32
-                        reverse_edge_hit = not self.check_collision_bottomright(stage.tile_group)
+                        self.collision.rect.x += 64
+                        reverse_edge_hit = not self.check_collision_midbottom(stage.tile_group)
+                        self.collision.rect.x -= 32
                         if edge2_hit:
                             self.collision.rect.x -= 64
                             edge3_hit = not self.check_collision_bottomleft(stage.tile_group)
                             self.collision.rect.x += 64
+
+            # Deal with collisions -------------------------------------------------------------------------------------
                 if edge_hit or self.airborne:
                     if (self.chasing and edge2_hit and not edge3_hit) or self.airborne:
                         if not self.airborne:
                             self.jump(1)
-                        self.airborne = True
+                        #self.airborne = True
                         if self.vector_x > 0:
                             self.move_right(self.speed * 2)
                         elif self.vector_x < 0 :
                             self.move_left(self.speed * 2)
 
-                    if edge2_hit and not self.chasing:
+                    if not self.chasing:
                         self.x -= self.vector_x * delta.time()
                         self.vector_x = 0
                         if reverse_edge_hit:
                             self.wandering = False
                     else:
+                        self.vector_x = 0
                         self.wandering = True
 
 
                 for enemy in stage.enemy_group:
                     for sound in enemy.sound_spheres:
-                        if self.name != enemy.name and self.collision.is_hitting_circle(sound.radius, sound.origin):
+                        if self.name != enemy.name and self.collision.is_hitting_circle(sound.radius, sound.origin) and enemy.chasing:
                             self.checking = True
                             self.point_of_interest = sound.origin
+                            self.waiting_tick_counter = 0
 
                 for sound in player.sound_spheres:
                     if self.collision.is_hitting_circle(sound.radius, sound.origin):
                         self.checking = True
                         self.point_of_interest = sound.origin
+                        self.waiting_tick_counter = 0
 
-                if self.checking:
+                if self.checking and not self.chasing:
                     if self.vector_x == 0:
-                        self.waiting_tick_counter += 1 * delta.time()
+                        self.waiting_tick_counter += delta.time()
                         if self.waiting_tick_counter >= 3:
                             self.point_of_interest = False
                             self.checking = False
                             self.waiting_tick_counter = 0
-#                    if self.vector_x == 0 or pygame.Rect.collidepoint(self.collision.rect, (self.point_of_interest[0], self.collision.rect.centery)):
-#                        self.waiting_tick_counter += 1 * delta.time()
-#                        if self.waiting_tick_counter >= 3:
-#                            self.point_of_interest = False
-#                            self.checking = False
-#                            self.waiting_tick_counter = 0
 
 
                 sprite_hit = False
@@ -177,7 +210,7 @@ class Enemy(Sprite):
                         self.hor_dir *= -1
 
                 if self.vector_x != 0:
-                    self.step_tick_counter += 1 * delta.time()
+                    self.step_tick_counter += delta.time()
                     step_delay = 0.75
                     if self.chasing:
                         step_delay = 0.2

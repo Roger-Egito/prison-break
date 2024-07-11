@@ -29,6 +29,7 @@ class noise:
     strong = False
     alpha = 5
     frame_counter = 0
+    on = True
 
     #@classmethod
     #def update(cls, alpha):
@@ -40,11 +41,22 @@ class noise:
     def render(cls):
         if cls.frame_counter >= len(cls.imgs):
             cls.frame_counter = 0
-        if noise.strong:
-            render(cls.imgs_strong[cls.frame_counter])
-        else:
-            render(cls.imgs[cls.frame_counter])
-        cls.frame_counter += 1
+
+        if window.gm_tick_counter >= window.gm_tick_delay:
+            window.gm_tick_counter = window.gm_tick_delay
+            if pygame.key.get_pressed()[pygame.K_1]:
+                window.gm_tick_counter = 0
+                if cls.on:
+                    cls.on = False
+                else:
+                    cls.on = True
+
+        if noise.on:
+            if noise.strong:
+                render(cls.imgs_strong[cls.frame_counter])
+            else:
+                render(cls.imgs[cls.frame_counter])
+            cls.frame_counter += 1
 
 
 

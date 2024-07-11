@@ -19,6 +19,8 @@ class Sprite(pygame.sprite.Sprite):
         H_CROUCHING = 'H_CROUCHING'
         WALKING = 'WALKING'
         H_WALKING = 'H_WALKING'
+        C_WALKING = 'C_WALKING'
+        C_RUNNING = 'C_RUNNING'
         HC_WALKING = 'HC_WALKING'
         JUMPING = 'JUMPING'
         S_JUMPING = 'S_JUMPING'
@@ -41,6 +43,7 @@ class Sprite(pygame.sprite.Sprite):
             sheet=True,
             has_alpha=True,
             name='',
+            type='',
             x=0,
             y=0,
             size_mult=1.5,
@@ -72,6 +75,7 @@ class Sprite(pygame.sprite.Sprite):
 
         self.has_alpha = has_alpha
         self.name = name
+        self.type = type
         self.x = x
         self.y = y
         self.default_x = x
@@ -126,6 +130,8 @@ class Sprite(pygame.sprite.Sprite):
         self.light_radius = light_radius
 
         self.hca = True        # Has Collision Attribute
+
+        self.close_to_interactive = False
 
     # ---
 
@@ -254,7 +260,6 @@ class Sprite(pygame.sprite.Sprite):
         self.img = pygame.transform.flip(self.img, 0, 1)
 
     def rotate_around_center(self, angle):
-        print(f"Flippado: {self.flipped}")
         # tentar solução de compensar a posição com a diferença de tamanho
         wi = self.img.get_width()
         hi = self.img.get_height()
@@ -372,31 +377,34 @@ class Sprite(pygame.sprite.Sprite):
 
 # ---
 
-    def jump(self, dist=0):
-        if dist:
+    def jump(self, dist=None):
+        if dist is not None:
             pass
-            self.vector_y -= (dist * self.height * self.jump_mult)
+            self.vector_y -= (dist * self.height * self.jump_mult)# * delta.time() * 17)
         else:
             #self.set_bottom(self.rect.bottom - 1)
-            self.vector_y -= (self.jump_height * self.height * self.jump_mult)# * delta.time()
+            self.vector_y -= (self.jump_height * self.height * self.jump_mult)# * delta.time() * 17)
         self.update_rect_y()
-        hit = self.check_collision_up(stage.tile_group)
-        if hit:
-            return True
-        else:
-            return False
+        hits = self.check_collision_up(stage.collision_group)
+        return hits
+        #if hit:
+        #    return hit
+        #else:
+        #    return False
 
     def apply_gravity(self, strength=0):
         if self.affected_by_gravity:
             oob_floor = 900  # out of bounds
-            acceleration = strength if strength else 600 * delta.time()
+            acceleration = strength * delta.time() if strength else 600 * delta.time() #10
 
-            self.move_down(acceleration)
+            hits = self.move_down(acceleration)
 
             if self.bottom > oob_floor:
                 self.airborne = False
                 self.vector_y = 0
                 self.set_bottom(160)
+
+            return hits
 
 # ---
 
@@ -554,6 +562,8 @@ class Sprite(pygame.sprite.Sprite):
                     self.set_right(tile.rect.left)
                 self.vector_x = 0
             return collisions
+        else:
+            return []
 
     def check_collision_bottomright(self, tiles):
         if self.has_collision:
@@ -563,6 +573,8 @@ class Sprite(pygame.sprite.Sprite):
             self.collision.rect.x -= 1
             self.collision.rect.y -= 1
             return collisions
+        else:
+            return []
 
     def check_collision_bottomleft(self, tiles):
         if self.has_collision:
@@ -572,6 +584,17 @@ class Sprite(pygame.sprite.Sprite):
             self.collision.rect.x += 1
             self.collision.rect.y -= 1
             return collisions
+        else:
+            return []
+
+    def check_collision_midbottom(self, tiles):
+        if self.has_collision:
+            self.collision.rect.y += 1
+            collisions = self.collision.get_hits(tiles, coords=self.collision.rect.midbottom, point_based=True)
+            self.collision.rect.y -= 1
+            return collisions
+        else:
+            return []
 
 
     def check_collision_left(self, tiles=None, sprites=None):
@@ -588,6 +611,8 @@ class Sprite(pygame.sprite.Sprite):
                     self.set_left(tile.rect.right)
                 self.vector_x = 0
             return collisions
+        else:
+            return []
 
     def check_collision_down(self, tiles):
         if self.has_collision:
@@ -596,6 +621,7 @@ class Sprite(pygame.sprite.Sprite):
             collisions = self.collision.get_hits(tiles)
             self.collision.rect.y -= 1
             if collisions:
+                self.airborne = False
                 if self.vector_y >= 150:
                     if not self.crouching:
                         if self.vector_y >= 450:
@@ -609,19 +635,19 @@ class Sprite(pygame.sprite.Sprite):
                         Sound_sphere(origin=self.collision.rect.midbottom, groups=self.sound_spheres,
                                  max_radius=abs(self.vector_y/6))
             for tile in collisions:
-                    self.airborne = False
                     if tile.hca:
                         self.set_bottom(tile.collision.rect.top)
                     else:
                         self.set_bottom(tile.rect.top)
                     self.vector_y = 0
-            return collisions if len(collisions) else False
+            return collisions# if len(collisions) else False
+        else:
+            return []
 
     def check_collision_up(self, tiles):
         if self.has_collision:
             #self.set_bottom(self.rect.bottom + 1) # DOES NOT WORK. MAKES JUMPING WEIRD. ALWAYS ROUNDS Y
             self.collision.rect.y -= 1
-            collisions = self.collision.get_hits(tiles)
             collisions = self.collision.get_hits(tiles)
             self.collision.rect.y += 1
             for tile in collisions:
@@ -629,8 +655,11 @@ class Sprite(pygame.sprite.Sprite):
                     self.set_top(tile.collision.rect.bottom)
                 else:
                     self.set_top(tile.rect.bottom)
-                self.vector_y = 0
-            return collisions if len(collisions) else False
+                #dddif not self.hanging:
+                #ddd    self.vector_y = 0
+            return collisions# if len(collisions) else False
+        else:
+            return []
 
     def check_collision_point(self, coords):
         return self.collision.is_hitting_point(coords)
@@ -707,7 +736,13 @@ class Sprite(pygame.sprite.Sprite):
                             else:
                                 self.change_image(self.anim.next(self.anim.idle))
                     else:
-                        self.change_image(self.anim.next(self.anim.idle))
+                        if self.type == 'Soldier':
+                            if self.alert:
+                                self.change_image(self.anim.next(self.anim.idle, speed_mult=5))
+                            else:
+                                self.change_image(self.anim.next(self.anim.idle))
+                        else:
+                            self.change_image(self.anim.next(self.anim.idle))
 
                 case 'WALKING':
                     self.change_image(self.anim.next(self.anim.walk))
@@ -729,6 +764,12 @@ class Sprite(pygame.sprite.Sprite):
                         self.change_image(self.anim.slide)
                     else:
                         self.change_image(self.anim.next(self.anim.crouch, first_frame=2, loop=False))
+                case 'C_WALKING':
+                    self.change_image(self.anim.next(self.anim.c_walk))
+                case 'C_RUNNING':
+                    self.change_image(self.anim.next(self.anim.c_walk, speed_mult=2))
+                    #self.change_image(self.anim.next(self.anim.c_walk, first_frame=1, step=4))
+                    #self.change_image(self.anim.next(self.anim.c_walk, first_frame=1, step=4))
                 case 'HANGING':
                     self.change_image(self.anim.next(self.anim.hang, first_frame=1, last_frame=1, loop=False))
                 case 'H_CROUCHING':
@@ -755,12 +796,12 @@ class Sprite(pygame.sprite.Sprite):
                             if self.vector_y < 0:
                                 self.rotate_around_center(rotation)
                             else:
-                                self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1, speed_mult=3))
+                                self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=1, speed_mult=3))
                         if self.flipped:
                             if self.vector_y < 0:
                                 self.rotate_around_center(-rotation)
                             else:
-                                self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1, speed_mult=3))
+                                self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=1, speed_mult=3))
                     else:
                         self.change_image(
                             self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1, speed_mult=3))

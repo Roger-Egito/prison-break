@@ -8,7 +8,7 @@ def play_music(file_name, volume=1, loops=-1, start=0, fade_in=0, extension='mp3
         path = 'assets/audio/bgm/'
         extension = '.'+extension
         if music == 'action' and file_name == 'safe':
-            play_sfx('deescalate', channel=3)
+            play_sfx('deescalate', channel=3, volume=0.5)
         pygame.mixer.music.load(path + file_name + extension)
         pygame.mixer.music.set_volume(volume)
         pygame.mixer.music.play(loops, start, fade_in)

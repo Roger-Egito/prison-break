@@ -3,24 +3,24 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "tmx/1-0.tmx",
+    "activeFile": "tmx/5-0.tmx",
     "expandedProjectPaths": [
-        "tsx",
         ".",
-        "tmx"
+        "tmx",
+        "tsx"
     ],
     "fileStates": {
         "tmx/0-0.tmx": {
             "scale": 1,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 374.5,
+                "x": 393.5,
                 "y": 290
             }
         },
         "tmx/1-0.tmx": {
             "scale": 1,
-            "selectedLayer": 2,
+            "selectedLayer": 3,
             "viewCenter": {
                 "x": 381.5,
                 "y": 192
@@ -28,10 +28,10 @@
         },
         "tmx/2-0.tmx": {
             "scale": 1,
-            "selectedLayer": 1,
+            "selectedLayer": 3,
             "viewCenter": {
-                "x": 368.5,
-                "y": 212
+                "x": 399.5,
+                "y": 223
             }
         },
         "tmx/2-1.tmx": {
@@ -49,19 +49,19 @@
             "scale": 1,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 411.5,
-                "y": 258
+                "x": 583.5,
+                "y": 362
             }
         },
         "tmx/4-0.tmx": {
             "expandedObjectLayers": [
                 5
             ],
-            "scale": 1,
-            "selectedLayer": 3,
+            "scale": 2,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 445.5,
-                "y": 208
+                "x": 328.25,
+                "y": 273
             }
         },
         "tmx/4-4.tmx": {
@@ -73,11 +73,25 @@
             }
         },
         "tmx/5-0.tmx": {
-            "scale": 1.0889375,
+            "expandedObjectLayers": [
+                5
+            ],
+            "scale": 1,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 412.787694426907,
-                "y": 224.07162945531772
+                "x": 416.5,
+                "y": 193
+            }
+        },
+        "tmx/6-0.tmx": {
+            "expandedObjectLayers": [
+                5
+            ],
+            "scale": 1,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 353.5,
+                "y": 233
             }
         },
         "tmx/Screenshot1.tmx": {
@@ -132,20 +146,24 @@
         "tmx/0-0.tmx",
         "tmx/1-0.tmx",
         "tmx/2-0.tmx",
-        "tmx/Screenshot1.tmx",
+        "tmx/4-0.tmx",
+        "tmx/5-0.tmx",
+        "tmx/3-0.tmx",
         "tmx/2-1.tmx"
     ],
     "project": "prison-break.tiled-project",
     "recentFiles": [
-        "tmx/3-0.tmx",
-        "tmx/2-0.tmx",
         "tmx/0-0.tmx",
+        "tmx/1-0.tmx",
+        "tmx/4-0.tmx",
+        "tsx/prison-break.tsx",
+        "tmx/2-0.tmx",
+        "tmx/2-1.tmx",
+        "tmx/3-0.tmx",
+        "tmx/5-0.tmx",
         "tmx/4-4.tmx",
         "tmx/Testing.tmx",
         "tmx/Screenshot1.tmx",
-        "tmx/1-0.tmx",
-        "tmx/2-1.tmx",
-        "tsx/prison-break.tsx",
         "tmx/Screenshot2.tmx"
     ],
     "tileset.lastUsedFormat": "tsx",

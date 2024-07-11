@@ -4,9 +4,11 @@ from data.config import window, render, calc, delta
 
 
 class Tile(pygame.sprite.Sprite):
-    def __init__(self, coords, image, groups, name=''):
+    def __init__(self, coords, image, groups, name='', type='Static', interactive=False, hca=False):
         super().__init__(groups)
         self.name = name
+        self.type = type
+        self.interactive = interactive
         self.img = image
         self.original_img = self.img.copy()
         self.img_hidden = self.img.copy()
@@ -23,7 +25,7 @@ class Tile(pygame.sprite.Sprite):
         self.last_darkness_level = 255
         self.in_light = False
         self.light_radius = 6
-        self.hca = False        # Has Collision Attribute
+        self.hca = hca        # Has Collision Attribute
 
 
     def render(self):

@@ -1,8 +1,9 @@
 import pygame
-import window
+from data.config import window, render
+from data.text import write
 import sys
-import music
-import mouse
+from data.audio import music
+import data.mouse as mouse
 
 class Button:
     def __init__(self, x=window.center_width, y=window.center_height,  text='', color=(240, 240, 240), surface=(150, 50), width=150, height=50, shadow=True, highlight=True):
@@ -25,10 +26,12 @@ class Button:
         if self.rect.collidepoint(mouse.pos()):
             pygame.draw.rect(self.surface, (195, 100, 195), (0, 0, self.width, self.height))
             if self.rect.collidepoint(window.mouse_last_position) is False:
-                music.play_sfx(window.sfx_menu_cursor)
+                pass
+                #music.play_sfx(window.sfx_menu_cursor)
         else:
             pygame.draw.rect(self.surface, self.color, (0, 0, self.width, self.height))
-        self.surface.blit(self.text_render, self.text_rect)
+            self.surface.blit(self.text_render, self.text_rect)
+
 
         if self.shadow:
             shadow_x = self.rect.x-5
@@ -75,5 +78,100 @@ class Button:
     def click(self, event, function=None, *args):
         if function is not None:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.rect.collidepoint(event.pos):
-                music.play_sfx(window.sfx_menu_confirm)
+                #music.play_sfx(window.sfx_menu_confirm)
                 function(*args)
+
+
+class Button2:
+    def __init__(self, text='', centerx=window.width/2, centery=window.height/2, row=1, row_spacing=50, text_size=32, text_color='white', box_color='black', box=True, shadow=False, border=True, border_px=2, border_color='black', text_align="topleft"):
+        self.text = write(text, border=border, font_size=text_size, font_color=text_color, border_color=border_color, border_px=border_px)
+        #self.shadow = pygame.font.Font(None, text_size).render(text, 1, 'black') if shadow else False
+        self.border = border
+        self.border_px = border_px
+        self.border_color = border_color
+        self.rect = self.text.get_rect()
+        self.centerx = centerx
+        self.centery = centery
+        self.row = row
+        self.row_spacing = row_spacing
+        self.text_size = text_size
+        self.text_color = text_color
+        self.box_color = box_color
+        self.box = box
+        self.text_align = text_align
+        setattr(self.rect, self.text_align, (self.x, (self.y + ((self.row-1) * self.row_spacing))))
+
+    @property
+    def x(self):
+        return self.centerx - self.width / 2
+
+    @property
+    def y(self):
+        return self.centery - self.height / 2
+
+    #def update_label(self, text='', text_size=24, text_color='white'):
+    #    self.text = pygame.font.Font(None, text_size).render(text, 1, text_color)
+    #    self.shadow = pygame.font.Font(None, text_size).render(text, 1, 'black') if self.shadow else False
+    #    self.rect = self.text.get_rect()
+    #    setattr(self.rect, self.text_align, (self.x - self.width/2, (self.y - self.height/2) + (self.row * self.row_spacing)))
+
+    def render(self):   #((10 * row + ((row-1) * (rect.height+1))))))  # (window.width - 16, 32))
+        if self.box:
+            pygame.draw.rect(window.display, self.box_color, (self.x - 5, self.y - 5 + ((self.row-1) * 50), self.width + 10, self.height + 10))
+        #if self.shadow:
+        #    render(self.shadow, (self.rect[0]+5, self.rect[1]+5))
+        #if self.border:
+        #    render(self.border, (self.rect[0], self.rect[1]))
+        render(self.text, self.rect)
+
+
+
+    def click(self, event, function=None, *args):
+        if function is not None:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                #mouse_rect = mouse.create_rect()
+                test1 = event.button == 1
+                test2 = pygame.Rect.collidepoint(self.rect, event.pos)
+                if event.button == 1 and self.rect.collidepoint(event.pos):
+                    print("CLICK!")
+                    #music.play_sfx(window.sfx_menu_confirm)
+                    function(*args)
+
+    # ---
+
+    @property
+    def width(self):
+        return self.rect.width
+
+    @property
+    def height(self):
+        return self.rect.height
+
+    # ---
+
+    @property
+    def center(self):
+        center = (self.centerx, self.centery)
+        return center
+
+    #@property
+    #def center_width(self):
+    #    return round(self.width / 2)
+#
+    #@property
+    #def center_height(self):
+    #    return round(self.height / 2)
+#
+    #@property
+    #def center_x(self):
+    #    return round(self.x + self.center_width)
+#
+    #@property
+    #def center_y(self):
+    #    return round(self.y + self.center_height)
+#
+    #def set_center(self, coordinate):
+    #    self.x = coordinate[0] - round(self.width / 2)
+    #    self.y = coordinate[1] - round(self.height / 2)
+
+    # ---

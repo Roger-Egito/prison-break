@@ -36,6 +36,7 @@ class Anim:
         self.s_jump = []
         self.run = []
         self.crouch = []
+        self.c_walk= []
         self.slide = []
         self.hang = []
         self.h_crouch = []

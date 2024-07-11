@@ -30,7 +30,11 @@ class stage:
     player_starting_coords = (0, 0)
     player_starting_flipped = False
 
-  # collision_offset=[2.5, 14], collision_dimensions=(20, 34))
+    gm_tick_counter = 0
+    lighting = True
+    show_enemy_sight = False
+    show_collisions = False
+
     tile_group = Group()
     darkness_group = Group()
     light_group = Group()
@@ -40,6 +44,9 @@ class stage:
     background_group = Group()
     enemy_group = Group()
     sound_group = Group()
+    collision_group = Group()
+    hiding_group = Group()
+    interactive_group = Group()
     #x = 0
     #y = 0
     offset_x = 0
@@ -87,10 +94,10 @@ class stage:
         return data
 
     @classmethod
-    def render_billboard(cls, object, text, text_size=24, text_color='white', box_color='black', box=True):
+    def render_billboard(cls, text, object, row=1, text_size=24, text_color='white', box_color='black', box=True, text_align="midbottom"):
         text = pygame.font.Font(None, text_size).render(text, 1, text_color)
         rect = text.get_rect()
-        setattr(rect, "midbottom", (object.centerx, object.y - 10))  # (window.width - 16, 32))
+        setattr(rect, text_align, (object.centerx, object.y - (11 * row + row * rect.height - rect.height - 1))) #((10 * row + ((row-1) * (rect.height+1))))))  # (window.width - 16, 32))
         if box:
             pygame.draw.rect(window.display, box_color, (rect[0] - 5, rect[1] - 5, rect[2] + 10, rect[3] + 10))
         render(text, rect)
@@ -121,6 +128,8 @@ class stage:
         cls.lightsource_group = Group()
         cls.enemy_group = Group()
         cls.collision_group = Group()
+        cls.hiding_group = Group()
+        cls.interactive_group = Group()
         cls.lightsource_group.add(player)
 
     @classmethod
@@ -144,7 +153,14 @@ class stage:
         try:
             for x, y, image in data.get_layer_by_name('Tiles').tiles():
                 coords = (x * 32, y * 32)
-                Tile(coords=coords, image=image, groups=(cls.tile_group, cls.collision_group))
+                Tile(coords=coords, image=image, groups=(cls.tile_group, cls.collision_group, cls.hiding_group), hca=False)
+        except:
+            pass
+
+        try:
+            for x, y, image in data.get_layer_by_name('Doors').tiles():
+                coords = (x * 32, y * 32)
+                Tile(coords=coords, image=image, type='Door', interactive=True, groups=(cls.tile_group, cls.collision_group, cls.hiding_group, cls.interactive_group))
         except:
             pass
 
@@ -159,7 +175,7 @@ class stage:
         try:
             for x, y, image in data.get_layer_by_name('Foreground').tiles():
                 coords = (x * 32, y * 32)
-                Tile(coords=coords, image=image, groups=cls.foreground_group)
+                Tile(coords=coords, image=image, groups=(cls.foreground_group, cls.hiding_group))
         except:
             pass
 
@@ -180,7 +196,7 @@ class stage:
         try:
             for x, y, image in data.get_layer_by_name('Lights').tiles():
                 coords = (x * 32, y * 32)
-                Tile(coords=coords, image=image, groups=(cls.light_group, cls.lightsource_group))
+                Tile(coords=coords, image=image, groups=(cls.light_group, cls.lightsource_group, cls.collision_group))
         except:
             pass
 
@@ -200,7 +216,7 @@ class stage:
                         direction = -1 if flipped else 1
                         Enemy(img='assets/Characters/Enemy 2/Idle.png', name=enemy.name, type=enemy.type, x=enemy.x, y=enemy.y-enemy.height+64,
                                 sheet_sprite_dimensions=(0, 0, enemy.width, enemy.height), speed_mult=0.5, size_mult=1.33,
-                                collision_offset=[12, 48], collision_dimensions=(30, 48), ai='SOLDIER',
+                                collision_offset=[23, 58], collision_dimensions=(13, 38), ai='SOLDIER',
                                 hor_dir=direction, flipped=flipped, light_radius=6, groups=(cls.enemy_group, cls.lightsource_group))  # collision_offset=[2.5, 14], collision_dimensions=(20, 34))
         except:
             pass
@@ -215,7 +231,14 @@ class stage:
         try:
             for x, y, image in data.get_layer_by_name('Tiles').tiles():
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
-                Tile(coords=coords, image=image, groups=(cls.tile_group, cls.collision_group))
+                Tile(coords=coords, image=image, groups=(cls.tile_group, cls.collision_group, cls.hiding_group))
+        except:
+            print('No Tiles')
+
+        try:
+            for x, y, image in data.get_layer_by_name('Doors').tiles():
+                coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
+                Tile(coords=coords, image=image, type='Door', interactive=True, groups=(cls.tile_group, cls.collision_group, cls.hiding_group, cls.interactive_group))
         except:
             print('No Tiles')
 
@@ -229,7 +252,7 @@ class stage:
         try:
             for x, y, image in data.get_layer_by_name('Foreground').tiles():
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
-                Tile(coords=coords, image=image, groups=cls.foreground_group)
+                Tile(coords=coords, image=image, groups=(cls.foreground_group, cls.hiding_group))
         except:
             print("No Foreground")
 
@@ -244,7 +267,7 @@ class stage:
         try:
             for x, y, image in data.get_layer_by_name('Lights').tiles():
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
-                Tile(coords=coords, image=image, groups=(cls.light_group, cls.lightsource_group))
+                Tile(coords=coords, image=image, groups=(cls.light_group, cls.lightsource_group, cls.collision_group))
         except:
             print("No Lights")
 
@@ -264,7 +287,7 @@ class stage:
                         direction = -1 if flipped else 1
                         Enemy(img='assets/Characters/Enemy 2/Idle.png', x=enemy.x + window.width * hor, y=enemy.y-enemy.height+64 + window.height * ver,
                                 sheet_sprite_dimensions=(0, 0, enemy.width, enemy.height), speed_mult=0.5, size_mult=1.33,
-                                collision_offset=[12, 48], collision_dimensions=(30, 48), ai='SOLDIER',
+                                collision_offset=[7, 48], collision_dimensions=(23, 48), ai='SOLDIER',
                                 hor_dir=direction, flipped=flipped, light_radius=6, groups=(cls.enemy_group, cls.lightsource_group))  # collision_offset=[2.5, 14], collision_dimensions=(20, 34))
         except:
             pass
@@ -298,7 +321,7 @@ class stage:
         cls.background_group.move(hor=hor, ver=ver, speed=speed)
         cls.enemy_group.force_move(hor=hor, ver=ver, speed=speed)
         if player and movePlayer:
-            player.force_move(hor_speed=hor*speed*0.95, ver_speed=ver*speed*0.95)
+            player.force_move(hor_speed=hor*speed*0.9, ver_speed=ver*speed*0.95)
         cls.offset_x += hor * speed * delta.time()
         cls.offset_y += ver * speed * delta.time()
 
@@ -356,12 +379,29 @@ class stage:
         # ---
 
         cls.background_group.render()
-        cls.light_group.render()
 
-        #pygame.draw.rect(window.display, 'pink', (player.rect))
-        #for i in cls.enemy_group:
-        #    pygame.draw.rect(window.display, 'pink', i.vision.rect)
-        #pygame.draw.rect(window.display, 'green' if not player.crouching else 'blue', (player.collision.rect))
+
+
+        if cls.show_enemy_sight:
+            for i in cls.enemy_group:
+                pygame.draw.rect(window.display, i.random_color, i.vision.rect)
+
+        window.gm_tick_counter += delta.time()
+        if window.gm_tick_counter >= window.gm_tick_delay:
+            window.gm_tick_counter = window.gm_tick_delay
+            if pygame.key.get_pressed()[pygame.K_4]:
+                window.gm_tick_counter = 0
+                if not cls.show_collisions:
+                    cls.show_collisions = True
+                else:
+                    cls.show_collisions = False
+
+        if cls.show_collisions:
+            pygame.draw.rect(window.display, 'pink', (player.rect))
+            pygame.draw.rect(window.display, 'green' if not player.crouching else 'blue', (player.collision.rect))
+            for i in stage.enemy_group:
+                pygame.draw.rect(window.display, 'pink', (i.rect))
+                pygame.draw.rect(window.display, 'green', (i.collision.rect))
 
         if player is not None:
             player.render()
@@ -374,22 +414,50 @@ class stage:
         cls.foreground_group.render()
         cls.overlay.render()
         for enemy in cls.enemy_group:
-            if enemy.alert:
-                cls.render_billboard(enemy.collision.rect, '!', 64, 'red', '', False)
+            if enemy.chasing:
+                cls.render_billboard(text='!', object=enemy.collision.rect, text_size=64, text_color='red', box=False)
                 enemy.light_radius = 12
             elif enemy.checking:
                 enemy.light_radius = 6
-                cls.render_billboard(enemy.collision.rect, '?', 64, 'yellow', '', False)
+                cls.render_billboard(text='?', object=enemy.collision.rect, text_size=64, text_color='yellow', box=False)
             else:
                 enemy.light_radius = 0
-        #cls.render_billboard(player.state, player.collision)
+        cls.light_group.render()
 
-        cls.background_group.update(cls.lightsource_group)
-        cls.decor_group.update(cls.lightsource_group, is_tile=False)
-        cls.tile_group.update(cls.lightsource_group)
-        cls.foreground_group.update(cls.lightsource_group, is_foreground=True)
-        cls.darkness_group.update(cls.lightsource_group, is_darkness=True)
+
+        #cls.render_billboard(str(player.state) + ' | ' + str(player.last_state), player.collision.rect)
+        #cls.render_billboard(str(int(player.vector_x)) + ' | ' + str(int(player.vector_y)), player.collision.rect, row=2)
+        #cls.render_billboard(str(player.airborne), player.collision.rect, row=3)
+        #cls.render_billboard(str(player.sliding), player.collision.rect, row=4)
+        #cls.render_billboard(str(player.close_to_interactive), player.collision.rect, row=1)
+
+        window.gm_tick_counter += delta.time()
+        if window.gm_tick_counter >= window.gm_tick_delay:
+            window.gm_tick_counter = window.gm_tick_delay
+            if pygame.key.get_pressed()[pygame.K_2]:
+                window.gm_tick_counter = 0
+                if cls.lighting:
+                    cls.lighting = False
+                else:
+                    cls.lighting = True
+
+        if cls.lighting:
+            cls.background_group.update(cls.lightsource_group)
+            cls.decor_group.update(cls.lightsource_group, is_tile=False)
+            cls.tile_group.update(cls.lightsource_group)
+            cls.foreground_group.update(cls.lightsource_group, is_foreground=True)
+            cls.darkness_group.update(cls.lightsource_group, is_darkness=True)
+
         cls.light_group.update(cls.lightsource_group, is_tile=False)
+
+        if window.gm_tick_counter >= window.gm_tick_delay:
+            window.gm_tick_counter = window.gm_tick_delay
+            if pygame.key.get_pressed()[pygame.K_3]:
+                window.gm_tick_counter = 0
+                if cls.show_enemy_sight:
+                    cls.show_enemy_sight = False
+                else:
+                    cls.show_enemy_sight = True
 
         player.apply_gravity()
         player.allow_movement()
@@ -406,4 +474,8 @@ class stage:
         cls.enemy_group.ai_control(player)
 
         #for enemy in cls.enemy_group:
-        #    cls.render_billboard(enemy.collision.rect, enemy.state, 64, 'red', '', False)
+            #cls.render_billboard('Y: ' + str(enemy.vector_y), enemy.collision.rect, text_align="midleft", row=1)
+            #cls.render_billboard('X: ' + str(enemy.vector_x), enemy.collision.rect, text_align="midleft", row=2)
+        #    cls.render_billboard(str(enemy.chasing), enemy.collision.rect, row=1)
+        #    cls.render_billboard(str(enemy.checking), enemy.collision.rect, row=2)
+        #    cls.render_billboard(str(enemy.wandering), enemy.collision.rect, row=3)

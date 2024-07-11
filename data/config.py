@@ -12,11 +12,15 @@ testing = True
 
 pygame.init()
 
+def return_random_color():
+    random_color = (random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
+    return random_color
 
 class window:
     width = 800
     height = 448
     screen_size = (1607, 900) #(1920, 1080)
+    srd = (screen_size[0] - width, screen_size[1] - height)  # Screen Resolution Difference
     center_width = width / 2
     center_height = height / 2
     center = (center_width, center_height)
@@ -24,12 +28,19 @@ class window:
     screen = pygame.display.set_mode((screen_size))#, pygame.NOFRAME)
     display = pygame.Surface((width, height), pygame.SRCALPHA)
     background_color = (10, 10, 10)
+    gm_tick_counter = 0
+    gm_tick_delay = 0.4
+    mouse_is_still_on_top = False
+    mouse_last_position = (0, 0)
 
     @classmethod
     def draw(cls):
         cls.screen.blit(pygame.transform.scale(window.display, window.screen_size), (0, 0))
 
-
+class flags:
+    map_00_key_collected = False
+    map_00_door_opened = False
+    map_01_door_opened = False
 
 class fps:
 
@@ -90,6 +101,22 @@ class fps:
             render(text, rect)
 
 
+class delta:
+    curr_time = 0
+    last_time = 0
+
+    @classmethod
+    def time(cls):          # How much time between last frame and this frame - in seconds
+        delta_time = min(0.06, (cls.curr_time - cls.last_time) / 1000)
+
+        return delta_time
+
+    @classmethod
+    def time_update(cls):
+        cls.last_time = cls.curr_time
+        cls.curr_time = pygame.time.get_ticks()
+
+
 class volume:
 
     max = 0.2
@@ -112,22 +139,6 @@ class volume:
                 pause_music()
                 cls.paused = True
                 cls.tick_counter = 0
-
-
-class delta:
-    curr_time = 0
-    last_time = 0
-
-    @classmethod
-    def time(cls):          # How much time between last frame and this frame - in seconds
-        delta_time = min(0.02, (cls.curr_time - cls.last_time) / 1000)
-
-        return delta_time
-
-    @classmethod
-    def time_update(cls):
-        cls.last_time = cls.curr_time
-        cls.curr_time = pygame.time.get_ticks()
 
 
 class calc:

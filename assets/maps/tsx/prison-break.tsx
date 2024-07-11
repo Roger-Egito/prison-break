@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="2024.07.03" name="prison-break" tilewidth="32" tileheight="32" tilecount="255" columns="0">
+<tileset version="1.10" tiledversion="2024.07.03" name="prison-break" tilewidth="32" tileheight="32" tilecount="258" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
  <tile id="255">
   <image source="../../tiles/1.png" width="32" height="32"/>
@@ -765,5 +765,14 @@
  </tile>
  <tile id="509">
   <image source="../../tiles/ventilationCoverWall.png" width="32" height="32"/>
+ </tile>
+ <tile id="510">
+  <image source="../../tiles/wall_lamp.png" width="32" height="32"/>
+ </tile>
+ <tile id="511">
+  <image source="../../tiles/escadaDeMãoDeitada.png" width="32" height="32"/>
+ </tile>
+ <tile id="512">
+  <image source="../../tiles/ventilationCoverWallVertical.png" width="32" height="32"/>
  </tile>
 </tileset>
