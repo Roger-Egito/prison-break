@@ -53,8 +53,8 @@ class Enemy(Sprite):
         AI = self.AIs
 
         if self.ai == AI.SOLDIER:
-            if not self.airborne:
-                self.vector_y = 0
+            #if not self.airborne:
+            #    self.vector_y = 0
 
             # Sight ----------------------------------------------------------------------------------------------------
             pptop = (player.collision.rect.centerx, player.collision.rect.y+5)
@@ -98,7 +98,7 @@ class Enemy(Sprite):
                     #self.airborne = self.vector_y != 0
             else:
                 self.chasing = False
-                self.airborne = self.vector_y != 0
+                #self.airborne = self.vector_y != 0
             if all(not enemy.chasing for enemy in stage.enemy_group):
                 play_music('safe')
 
@@ -159,7 +159,7 @@ class Enemy(Sprite):
                     if (self.chasing and edge2_hit and not edge3_hit) or self.airborne:
                         if not self.airborne:
                             self.jump(1)
-                        #self.airborne = True
+                        self.airborne = True
                         if self.vector_x > 0:
                             self.move_right(self.speed * 2)
                         elif self.vector_x < 0 :

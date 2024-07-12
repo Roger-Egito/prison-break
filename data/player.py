@@ -2,8 +2,11 @@ from data.sprite import Sprite
 from data.config import window, delta
 from data.stage import *
 from data.hearing import *
+import data.ending as ending
+import data.title as title
 #from data.game import game_over, stage_restart
 import pygame
+
 
 
 class Player(Sprite):
@@ -62,6 +65,12 @@ class Player(Sprite):
             stage.transition_left(self)
         return beyond_border
 
+    def block_top_border(self):
+        beyond_border = self.collision.bottom <= 0
+        if beyond_border and stage.coords == [6, 0]:
+            ending.screen()
+
+
     def state_control(self):
         s = self.States
         st = self.state
@@ -81,7 +90,6 @@ class Player(Sprite):
 
         if self.rolling:
           self.state = s.ROLLING
-
 
         elif crouching and (self.last_state != 'HC_WALKING' or hanging):
             if hanging:
@@ -170,7 +178,6 @@ class Player(Sprite):
                 self.sliding = dist
 
             self.on_wall = self.move(hor_speed=self.speed * self.sliding)
-            print(self.vector_x)
 
             #if self.vector_x > 0:
             #    self.block_right_border()
@@ -217,6 +224,7 @@ class Player(Sprite):
             pressing_r = pygame.key.get_pressed()[pygame.K_r]
             pressing_g = pygame.key.get_pressed()[pygame.K_g]
             pressing_q = pygame.key.get_pressed()[pygame.K_q]
+            pressing_esc = pygame.key.get_pressed()[pygame.K_ESCAPE]
 
             self.sprinting = pressing_shift
             crouching = self.crouching
@@ -389,7 +397,6 @@ class Player(Sprite):
                                     break
                         self.hanging = True
                         self.airborne = False
-                        print('airborne:', self.airborne)
                 elif hanging:
                 # TODO: Make backflip happen more consistently. Weird bug.
                     #self.affected_by_gravity = False
@@ -494,12 +501,19 @@ class Player(Sprite):
                 self.affected_by_gravity = False
                 from data.game import game_over
                 game_over()
+            if pressing_esc:
+                play_sfx('stage-restart', volume=0.25, fade_out=3000)
+                stop_music()
+                title.screen()
+
 
 
             if self.vector_x > 0:
                 self.block_right_border()
             elif self.vector_x < 0:
                 self.block_left_border()
+            if self.vector_y < 0:
+                self.block_top_border()
 
         else:
             if self.t_right:

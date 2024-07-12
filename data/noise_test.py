@@ -74,7 +74,6 @@ while running:
                 pixel_ratio -= pixel_ratio//10 + 1
             pixel_ratio = min(max(pixel_ratio_range[0], pixel_ratio), pixel_ratio_range[1])
 
-    print(pixel_ratio)
     pygame.display.update()
     fpsClock.tick(30)
 

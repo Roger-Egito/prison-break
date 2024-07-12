@@ -1,6 +1,7 @@
 import pygame
 from data.config import window, render
 from data.text import write
+from data.audio import play_sfx
 import sys
 from data.audio import music
 import data.mouse as mouse
@@ -26,8 +27,7 @@ class Button:
         if self.rect.collidepoint(mouse.pos()):
             pygame.draw.rect(self.surface, (195, 100, 195), (0, 0, self.width, self.height))
             if self.rect.collidepoint(window.mouse_last_position) is False:
-                pass
-                #music.play_sfx(window.sfx_menu_cursor)
+                play_sfx('cursor-hover')
         else:
             pygame.draw.rect(self.surface, self.color, (0, 0, self.width, self.height))
             self.surface.blit(self.text_render, self.text_rect)
@@ -77,19 +77,19 @@ class Button:
 
     def click(self, event, function=None, *args):
         if function is not None:
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.rect.collidepoint(event.pos):
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.rect.collidepoint(mouse.pos()):
                 #music.play_sfx(window.sfx_menu_confirm)
                 function(*args)
 
 
 class Button2:
-    def __init__(self, text='', centerx=window.width/2, centery=window.height/2, row=1, row_spacing=50, text_size=32, text_color='white', box_color='black', box=True, shadow=False, border=True, border_px=2, border_color='black', text_align="topleft"):
-        self.text = write(text, border=border, font_size=text_size, font_color=text_color, border_color=border_color, border_px=border_px)
+    def __init__(self, text='', centerx=window.width/2, centery=window.height/2, row=0, row_spacing=50, text_size=32, text_color='white', box_color='black', box=True, shadow=False, border=True, border_px=2, border_color='black', text_align="topleft"):
+        self.text = text
+        #self.bigger_text_render = write(text, border=border, font_size=text_size+5, font_color=text_color, border_color=border_color, border_px=border_px)
         #self.shadow = pygame.font.Font(None, text_size).render(text, 1, 'black') if shadow else False
         self.border = border
         self.border_px = border_px
         self.border_color = border_color
-        self.rect = self.text.get_rect()
         self.centerx = centerx
         self.centery = centery
         self.row = row
@@ -99,7 +99,16 @@ class Button2:
         self.box_color = box_color
         self.box = box
         self.text_align = text_align
-        setattr(self.rect, self.text_align, (self.x, (self.y + ((self.row-1) * self.row_spacing))))
+
+        self.rect = write(self.text, border=self.border, font_size=self.text_size + 5, font_color=self.text_color,
+                  border_color=self.border_color,
+                  border_px=self.border_px, x=self.centerx, y=self.centery + (self.row * self.row_spacing), draw=False)
+
+        #setattr(self.rect, self.text_align, (self.x, (self.y + ((self.row-1) * self.row_spacing))))
+        #setattr(self.bigger_rect, self.text_align, (self.x, (self.y + ((self.row-1) * self.row_spacing))))
+        #self.label = write(text, border=border, font_size=text_size, font_color=text_color, border_color=border_color, border_px=border_px)
+        #self.big_label = write(text, border=border, font_size=text_size+5, font_color=text_color, border_color=border_color, border_px=border_px)
+
 
     @property
     def x(self):
@@ -109,32 +118,37 @@ class Button2:
     def y(self):
         return self.centery - self.height / 2
 
-    #def update_label(self, text='', text_size=24, text_color='white'):
-    #    self.text = pygame.font.Font(None, text_size).render(text, 1, text_color)
-    #    self.shadow = pygame.font.Font(None, text_size).render(text, 1, 'black') if self.shadow else False
-    #    self.rect = self.text.get_rect()
-    #    setattr(self.rect, self.text_align, (self.x - self.width/2, (self.y - self.height/2) + (self.row * self.row_spacing)))
+    @property
+    def selected_text_size(self):
+        return self.text_size + 5
+
+    #def alter_text(self, size=None):        # Obviously this method is incomplete, but I will be completing it as necessary
+    #    if size is not None:
+    #        self.text_size = size
+    #    self.text_render = write(self.text, border=self.border, font_size=self.text_size, font_color=self.text_color, border_color=self.border_color, border_px=self.border_px)
+    #    self.rect = self.text_render.get_rect()
+    #    setattr(self.rect, self.text_align, (self.x, (self.y + ((self.row-1) * self.row_spacing))))
 
     def render(self):   #((10 * row + ((row-1) * (rect.height+1))))))  # (window.width - 16, 32))
-        if self.box:
-            pygame.draw.rect(window.display, self.box_color, (self.x - 5, self.y - 5 + ((self.row-1) * 50), self.width + 10, self.height + 10))
-        #if self.shadow:
-        #    render(self.shadow, (self.rect[0]+5, self.rect[1]+5))
-        #if self.border:
-        #    render(self.border, (self.rect[0], self.rect[1]))
-        render(self.text, self.rect)
+        if self.rect.collidepoint(mouse.pos()):
+            self.rect = write(self.text, border=self.border, font_size=self.text_size + 5, font_color=self.text_color,
+                  border_color=self.border_color,
+                  border_px=self.border_px, x=self.centerx, y=self.centery + (self.row * self.row_spacing))
+            if self.rect.collidepoint(window.mouse_last_position) is False:
+                play_sfx('cursor-hover', fade_out=1000)
+        else:
+            write(self.text, border=self.border, font_size=self.text_size, font_color=self.text_color,
+                  border_color=self.border_color,
+                  border_px=self.border_px, x=self.centerx, y=self.centery + (self.row * self.row_spacing))
+
+
 
 
 
     def click(self, event, function=None, *args):
         if function is not None:
             if event.type == pygame.MOUSEBUTTONDOWN:
-                #mouse_rect = mouse.create_rect()
-                test1 = event.button == 1
-                test2 = pygame.Rect.collidepoint(self.rect, event.pos)
-                if event.button == 1 and self.rect.collidepoint(event.pos):
-                    print("CLICK!")
-                    #music.play_sfx(window.sfx_menu_confirm)
+                if event.button == 1 and pygame.Rect.collidepoint(self.rect, mouse.pos()):
                     function(*args)
 
     # ---

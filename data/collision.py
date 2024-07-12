@@ -149,8 +149,6 @@ class Collision:
                 if tile.rect.collidepoint(coords):
                     hit_list.append(tile.rect)
             else:
-                if not hasattr(tile, 'hca'):
-                    print('what?')
                 if tile.hca:
                     collision = tile.collision.rect
                     if self.rect.colliderect(collision):

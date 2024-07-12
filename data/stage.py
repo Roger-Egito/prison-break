@@ -103,7 +103,7 @@ class stage:
         render(text, rect)
 
     @classmethod
-    def change(cls, hor=0, ver=0, instant=False, coords=None, player=None, speed=0, overwrite_player_direction=False):
+    def change(cls, hor=0, ver=0, instant=False, coords=None, player=None, speed=0, overwrite_player_direction=False, death=False):
 
         if coords:
             if cls.coords is None:
@@ -111,7 +111,7 @@ class stage:
             cls.coords = list(coords)
 
         if instant:
-            cls.load(player, overwrite_player_direction=overwrite_player_direction)
+            cls.load(player, overwrite_player_direction=overwrite_player_direction, death=death)
         else:
             cls.start_transition(hor=hor, ver=ver, speed=speed, player=player)
 
@@ -139,12 +139,13 @@ class stage:
         cls.name = filepath[len(cls.path):-len(cls.extension)]
 
     @classmethod
-    def load(cls, player=None, overwrite_player_direction=False):
+    def load(cls, player=None, overwrite_player_direction=False, death=False):
         play_music('safe')
         cls.clear(player)
         data = cls.get_data()
 
-        cls.player_starting_coords = player.coords
+        if not death:
+            cls.player_starting_coords = player.coords
         if overwrite_player_direction:
             player.flipped = cls.player_starting_flipped
         else:
@@ -233,28 +234,28 @@ class stage:
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
                 Tile(coords=coords, image=image, groups=(cls.tile_group, cls.collision_group, cls.hiding_group))
         except:
-            print('No Tiles')
+            pass
 
         try:
             for x, y, image in data.get_layer_by_name('Doors').tiles():
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
                 Tile(coords=coords, image=image, type='Door', interactive=True, groups=(cls.tile_group, cls.collision_group, cls.hiding_group, cls.interactive_group))
         except:
-            print('No Tiles')
+            pass
 
         try:
             for x, y, image in data.get_layer_by_name('Decor').tiles():
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
                 Tile(coords=coords, image=image, groups=cls.decor_group)
         except:
-            print('No Decor')
+            pass
 
         try:
             for x, y, image in data.get_layer_by_name('Foreground').tiles():
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
                 Tile(coords=coords, image=image, groups=(cls.foreground_group, cls.hiding_group))
         except:
-            print("No Foreground")
+            pass
 
         try:
             for x, y, image in data.get_layer_by_name('Background').tiles():
@@ -262,21 +263,21 @@ class stage:
                 image.fill((250, 250, 250, 255), None, pygame.BLEND_RGBA_MULT)
                 Tile(coords=coords, image=image, groups=cls.background_group)
         except:
-            print("No Background")
+            pass
 
         try:
             for x, y, image in data.get_layer_by_name('Lights').tiles():
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
                 Tile(coords=coords, image=image, groups=(cls.light_group, cls.lightsource_group, cls.collision_group))
         except:
-            print("No Lights")
+            pass
 
         try:
             for x, y, image in data.get_layer_by_name('Background').tiles():
                 coords = (x * 32 + window.width * hor, y * 32 + window.height * ver)
                 Tile(coords=coords, image=image, groups=cls.darkness_group)
         except:
-            print("Please insert background!")
+            pass
 
         try:
             from data.enemy import Enemy
@@ -406,8 +407,6 @@ class stage:
         if player is not None:
             player.render()
             cls.enemy_group.render()
-        else:
-            print("aaahh, sumiu")
 
         cls.tile_group.render()
         cls.decor_group.render()
@@ -459,12 +458,13 @@ class stage:
                 else:
                     cls.show_enemy_sight = True
 
-        player.apply_gravity()
-        player.allow_movement()
-        player.update_collision()
-        player.state_control()
-        player.animate()
-        player.sound_spheres.update()
+        if player.name == 'Player':
+            player.apply_gravity()
+            player.allow_movement()
+            player.update_collision()
+            player.state_control()
+            player.animate()
+            player.sound_spheres.update()
         cls.enemy_group.animate()
         cls.enemy_group.state_control()
         cls.enemy_group.apply_gravity()
@@ -474,6 +474,7 @@ class stage:
         cls.enemy_group.ai_control(player)
 
         #for enemy in cls.enemy_group:
+        #    cls.render_billboard(str(enemy.state), enemy.collision.rect)
         #    cls.render_billboard('AB: ' + str(enemy.airborne), enemy.collision.rect)
             #cls.render_billboard('Y: ' + str(enemy.vector_y), enemy.collision.rect, text_align="midleft", row=1)
             #cls.render_billboard('X: ' + str(enemy.vector_x), enemy.collision.rect, text_align="midleft", row=2)

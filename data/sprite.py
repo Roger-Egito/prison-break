@@ -53,6 +53,7 @@ class Sprite(pygame.sprite.Sprite):
             sheet_sprite_dimensions=(0, 0, 48, 48),
             sheet_image_count=4,
             sheet_step=1,
+            sheet_default=0,
             sheet_colorkey=None,
             collision_offset=(0,0),
             collision_dimensions=(0, 0),
@@ -71,7 +72,7 @@ class Sprite(pygame.sprite.Sprite):
 
         if sheet:
             self.anim.idle = self.anim.populate(img, sheet_sprite_dimensions, sheet_image_count, sheet_step, has_alpha, sheet_colorkey)
-            self.img = self.anim.idle[0]
+            self.img = self.anim.idle[sheet_default]
 
         self.has_alpha = has_alpha
         self.name = name
@@ -773,7 +774,7 @@ class Sprite(pygame.sprite.Sprite):
                 case 'HANGING':
                     self.change_image(self.anim.next(self.anim.hang, first_frame=1, last_frame=1, loop=False))
                 case 'H_CROUCHING':
-                    if self.last_state == 'H_JUMPING' or self.last_state == 'HJ_FALLING':
+                    if not self.hanging and (self.last_state == 'H_JUMPING' or self.last_state == 'HJ_FALLING'):
                         self.change_image(self.anim.next(self.anim.h_jump, last_frame=4, loop=True, step=-1))
                     else:
                         self.change_image(self.anim.next(self.anim.hc_walk, first_frame=1, step=0))

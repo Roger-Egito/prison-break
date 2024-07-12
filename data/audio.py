@@ -14,17 +14,25 @@ def play_music(file_name, volume=1, loops=-1, start=0, fade_in=0, extension='mp3
         pygame.mixer.music.play(loops, start, fade_in)
         music = file_name
 
+def fadeout_music(fadeout=1000):
+    pygame.mixer.music.fadeout(fadeout)
+
 def pause_music():
     pygame.mixer.music.pause()
 
+def stop_music():
+    pygame.mixer.music.stop()
 
 def resume_music():
     pygame.mixer.music.unpause()
 
 # ---
 
-def play_sfx(file_name, volume=1, fade_ms=0, fade_out=0, extension='mp3', channel=-1):
-    path = 'assets/audio/sfx/'
+def play_sfx(file_name, volume=1, fade_ms=0, fade_out=0, extension='mp3', channel=-1, stinger=False):
+    if not stinger:
+        path = 'assets/audio/sfx/'
+    else:
+        path = 'assets/audio/stinger/'
     extension = '.'+extension
     if channel >= 0:
         channel = pygame.mixer.Channel(channel)

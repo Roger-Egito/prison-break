@@ -19,9 +19,9 @@ def return_random_color():
 class window:
     width = 800
     height = 448
-    screen_size = (1600, 900) #(1920, 1080)
+    screen_size = (1280, 720) #(1920, 1080)
     srd = (screen_size[0] - width, screen_size[1] - height)  # Screen Resolution Difference
-    srdp = ()
+    srdp = (screen_size[0] / width, screen_size[1] / height)  # Screen Resolution Difference Proportion (2 = 200% original size)
     center_width = width / 2
     center_height = height / 2
     center = (center_width, center_height)
@@ -55,7 +55,7 @@ class fps:
     last_values = []
     max_samples = 5
     avg = 0
-    show = True
+    show = False
     key_press_delay = 0.2
 
     key_tick_counter = 0

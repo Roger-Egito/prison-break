@@ -8,16 +8,21 @@ from data.stage import stage
 #soldier = Enemy(img='assets/Characters/Enemy 2/Idle.png', x=544, y=65, sheet_sprite_dimensions=(0, 0, 96, 96), speed_mult=0.5, size_mult=1.33, collision_offset=[12, 48], collision_dimensions=(30, 48), ai='SOLDIER', hor_dir=-1)  #collision_offset=[2.5, 14], collision_dimensions=(20, 34))
 #play_music('assets/audio/bgm/safe-1.mp3', volume=volume.current)
 
-player = Player(img='assets/Characters/2 Punk/Punk_idle.png', name='Player', x=160, y=192, collision_offset=[7, 14],
+player = Player(img='assets/Characters/2 Punk/Punk_idle.png', name='Player', x=128, y=224, collision_offset=[7, 14],
                 collision_dimensions=(15, 34),
                 multiple_idles=True,
                 light_radius=6)
 
-stage.change(instant=True, coords=(0, 0), player=player)
-stage.min_coords = (0, 0)
-stage.max_coords = (6, 0)
-
-#play_music('safe')
+def start():
+    player.x = 160
+    player.y = 192
+    player.vector_x = 0
+    player.vector_y = 0
+    stage.change(instant=True, coords=(0, 0), player=player)
+    stage.min_coords = (0, 0)
+    stage.max_coords = (6, 0)
+    play_music('safe')
+    loop()
 
 restarting = False
 restarting_tick_counter = 0
@@ -37,7 +42,7 @@ def stage_restart(death=False):
         player.sliding = False
         player.crouch()
         player.stand()
-        stage.change(instant=True, coords=stage.coords, player=player, overwrite_player_direction=True)
+        stage.change(instant=True, coords=stage.coords, player=player, overwrite_player_direction=True, death=death)
 
 
 def end_restart():
